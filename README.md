@@ -25,7 +25,15 @@ Feito por: Gdapazz
 | Personalização | 8 temas, editor de tema, overlay (6 estilos, posição, monitor, escala, cores, métricas), editor do painel, preferências de interface. Importação/exportação versionada e validada. |
 | Configurações | Inicialização, bandeja, fechamento, perfis de desempenho, PresentMon, alertas, atalhos globais, retenção de dados. |
 
-## Início rápido
+## Instalar
+
+O `Setup.exe` **não** vai no Git (é um instalador de ~83 MB gerado a cada publicação). Os usuários baixam o instalador na página de releases:
+
+**[Baixar FRAMEX (Setup.exe)](https://github.com/gdapazz/FrameX/releases/latest)**
+
+Execute o `Setup.exe`, aceite o administrador e abra o FRAMEX. O instalador coloca o programa em `Program Files`, inclui o PresentMon e instala o serviço/driver para FPS e temperatura da CPU. Veja [docs/EXECUCAO.md](docs/EXECUCAO.md).
+
+Para gerar de novo depois de alterar o código: `./scripts/publish.ps1` (recria `D:\Framex\Setup.exe`). Quem desenvolve a partir do código:
 
 ```powershell
 # Requer o SDK do .NET 10
@@ -33,8 +41,6 @@ Feito por: Gdapazz
 ./scripts/test.ps1
 dotnet run --project src/Framex.App
 ```
-
-O caminho normal é instalar com `Setup.exe` e abrir o FRAMEX: o instalador inclui o PresentMon e o serviço que captura FPS e lê a CPU. Quem roda a partir do código precisa do PresentMon em `%LOCALAPPDATA%\FRAMEX\tools`. Veja [docs/EXECUCAO.md](docs/EXECUCAO.md).
 
 ## Documentação
 
