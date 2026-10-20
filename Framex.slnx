@@ -1,0 +1,14 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Framex.App/Framex.App.csproj" />
+    <Project Path="src/Framex.Core/Framex.Core.csproj" />
+    <Project Path="src/Framex.Infrastructure/Framex.Infrastructure.csproj" />
+    <Project Path="src/Framex.Service/Framex.Service.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Framex.Tests/Framex.Tests.csproj" />
+  </Folder>
+  <Folder Name="/tools/">
+    <Project Path="tools/Framex.UiSmoke/Framex.UiSmoke.csproj" />
+  </Folder>
+</Solution>

@@ -1,0 +1,12 @@
+bin/
+obj/
+artifacts/
+Setup.exe
+TestResults/
+.vs/
+*.user
+*.suo
+*.binlog
+
+# PresentMon solto na pasta tools do repositório (execução local). O instalador usa installer/redist.
+tools/**/PresentMon*.exe

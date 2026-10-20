@@ -1,0 +1,12 @@
+PawnIO 2.2.0 (driver de E/S assinado, usado pelo LibreHardwareMonitor para ler sensores da CPU)
+
+O FRAMEX distribui o instalador oficial PawnIO_setup.exe sem nenhuma modificação, como programa separado.
+O FRAMEX não é um trabalho derivado do PawnIO; apenas o instala e o utiliza por meio do LibreHardwareMonitorLib.
+
+Licença: GNU General Public License, versão 2 (texto completo em PawnIO-LICENSE.txt).
+Código-fonte: https://github.com/namazso/PawnIO
+Instalador oficial: https://github.com/namazso/PawnIO.Setup/releases/tag/2.2.0
+SHA-256 do instalador incluído: 1F519A22E47187F70A1379A48CA604981C4FCF694F4E65B734AAA74A9FBA3032
+
+Desinstalação: o PawnIO pode ser usado por outros programas (ex.: LibreHardwareMonitor, FanControl), por isso
+não é removido junto com o FRAMEX. Para removê-lo, use "Aplicativos instalados" do Windows (PawnIO).

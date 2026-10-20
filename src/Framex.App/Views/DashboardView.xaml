@@ -1,0 +1,319 @@
+<UserControl x:Class="Framex.App.Views.DashboardView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:Framex.App.ViewModels"
+             xmlns:fx="clr-namespace:Framex.App.Controls"
+             xmlns:domain="clr-namespace:Framex.Core.Domain;assembly=Framex.Core"
+             mc:Ignorable="d" d:DataContext="{d:DesignInstance vm:DashboardViewModel}" d:DesignWidth="1100" d:DesignHeight="800">
+    <UserControl.Resources>
+        <fx:BoolToVisibilityConverter x:Key="Vis" />
+        <fx:BoolToVisibilityConverter x:Key="NotVis" Invert="True" />
+        <fx:NullToVisibilityConverter x:Key="NullVis" />
+        <fx:WidgetTemplateSelector x:Key="WidgetSelector" />
+        <fx:MultiplyConverter x:Key="Mul" />
+
+        <!-- Medidor genérico (CPU/GPU/RAM/VRAM) -->
+        <DataTemplate x:Key="GaugeTileTemplate" DataType="{x:Type vm:GaugeTile}">
+            <Border Style="{StaticResource Card}">
+                <DockPanel>
+                    <DockPanel DockPanel.Dock="Top" Margin="0,0,0,10">
+                        <Path Style="{StaticResource Icon}" Data="{Binding Icon, Converter={x:Static fx:ResourceKeyConverter.Instance}}" Stroke="{DynamicResource B.Primary}" />
+                        <TextBlock Text="{Binding Title}" Style="{StaticResource Text.Subtitle}" Margin="10,0,0,0" VerticalAlignment="Center" />
+                    </DockPanel>
+                    <Grid DockPanel.Dock="Top" Height="132" Margin="0,0,0,12">
+                        <fx:ArcGauge Width="132" Height="132" Value="{Binding Percent}" Maximum="100" Thickness="11"
+                                     Mode="{Binding DataContext.GaugeMode, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                     Stroke="{DynamicResource B.HeroGradient}" Track="{DynamicResource B.SurfaceHigh}" />
+                        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <TextBlock Text="{Binding PercentText}" Style="{StaticResource Text.Hero}" HorizontalAlignment="Center" />
+                            <TextBlock Text="uso" Style="{StaticResource Text.Caption}" HorizontalAlignment="Center" Margin="0,-4,0,0" />
+                        </StackPanel>
+                    </Grid>
+                    <TextBlock DockPanel.Dock="Top" Text="{Binding UnavailableReason}" Style="{StaticResource Text.Caption}" Foreground="{DynamicResource B.Warning}"
+                               TextWrapping="Wrap" Margin="0,0,0,8" Visibility="{Binding UnavailableReason, Converter={StaticResource NullVis}}" />
+                    <ItemsControl ItemsSource="{Binding Lines}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="{x:Type vm:StatLine}">
+                                <DockPanel Margin="0,3" Background="Transparent" ToolTip="{Binding Note}">
+                                    <TextBlock DockPanel.Dock="Right" Text="{Binding Value}" FontWeight="SemiBold" FontFamily="{DynamicResource F.Display}" />
+                                    <TextBlock Text="{Binding Label}" Style="{StaticResource Text.Muted}" />
+                                </DockPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </DockPanel>
+            </Border>
+        </DataTemplate>
+
+        <DataTemplate x:Key="W.CpuGauge"><ContentControl Content="{Binding DataContext.Cpu, RelativeSource={RelativeSource AncestorType=UserControl}}" ContentTemplate="{StaticResource GaugeTileTemplate}" /></DataTemplate>
+        <DataTemplate x:Key="W.GpuGauge"><ContentControl Content="{Binding DataContext.Gpu, RelativeSource={RelativeSource AncestorType=UserControl}}" ContentTemplate="{StaticResource GaugeTileTemplate}" /></DataTemplate>
+        <DataTemplate x:Key="W.RamGauge"><ContentControl Content="{Binding DataContext.Ram, RelativeSource={RelativeSource AncestorType=UserControl}}" ContentTemplate="{StaticResource GaugeTileTemplate}" /></DataTemplate>
+        <DataTemplate x:Key="W.VramGauge"><ContentControl Content="{Binding DataContext.Vram, RelativeSource={RelativeSource AncestorType=UserControl}}" ContentTemplate="{StaticResource GaugeTileTemplate}" /></DataTemplate>
+
+        <!-- Painel de quadros -->
+        <DataTemplate x:Key="W.FramePanel">
+            <Border Style="{StaticResource Card}" DataContext="{Binding DataContext, RelativeSource={RelativeSource AncestorType=UserControl}}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Margin="0,0,28,0">
+                        <StackPanel Orientation="Horizontal">
+                            <Path Style="{StaticResource Icon}" Data="{StaticResource I.Bolt}" Stroke="{DynamicResource B.Primary}" />
+                            <TextBlock Text="Quadros" Style="{StaticResource Text.Subtitle}" Margin="10,0,0,0" />
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                            <TextBlock Text="{Binding FpsText}" Style="{StaticResource Text.Display}" Foreground="{DynamicResource B.HeroGradient}">
+                                <TextBlock.Effect>
+                                    <DropShadowEffect Color="{DynamicResource C.Primary}" BlurRadius="24" ShadowDepth="0" Opacity="{DynamicResource O.Glow}" />
+                                </TextBlock.Effect>
+                            </TextBlock>
+                            <TextBlock Text="FPS" Style="{StaticResource Text.Subtitle}" Foreground="{DynamicResource B.TextMuted}" VerticalAlignment="Bottom" Margin="8,0,0,12" />
+                        </StackPanel>
+                        <UniformGrid Columns="3" Margin="0,4,0,0">
+                            <StackPanel Margin="0,0,18,0">
+                                <TextBlock Text="Frametime" Style="{StaticResource Text.Caption}" />
+                                <TextBlock Text="{Binding FrameTimeText}" Style="{StaticResource Text.Subtitle}" />
+                            </StackPanel>
+                            <StackPanel Margin="0,0,18,0" ToolTip="1000 ÷ média do 1% de frametimes mais longos nos últimos 30 s">
+                                <TextBlock Text="1% low" Style="{StaticResource Text.Caption}" />
+                                <TextBlock Text="{Binding Low1Text}" Style="{StaticResource Text.Subtitle}" />
+                            </StackPanel>
+                            <StackPanel ToolTip="Maior frametime na última janela de 1 s">
+                                <TextBlock Text="Pior quadro" Style="{StaticResource Text.Caption}" />
+                                <TextBlock Text="{Binding MaxFrameTimeText}" Style="{StaticResource Text.Subtitle}" />
+                            </StackPanel>
+                        </UniformGrid>
+                        <TextBlock Text="{Binding FrameStateText}" Style="{StaticResource Text.Caption}" TextWrapping="Wrap" MaxWidth="330" HorizontalAlignment="Left" Margin="0,12,0,0" />
+                    </StackPanel>
+                    <Grid Grid.Column="1">
+                        <fx:LiveChart Series1="{Binding Live.Fps}" Revision="{Binding Revision}" Capacity="120" Minimum="0" Unit=""
+                                      Brush1="{DynamicResource B.Chart0}" GridBrush="{DynamicResource B.Border}" LabelBrush="{DynamicResource B.TextMuted}" MinHeight="150" />
+                        <TextBlock Text="Sem dados de quadros" Style="{StaticResource Text.Muted}" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                   Visibility="{Binding HasFrames, Converter={StaticResource NotVis}}" />
+                    </Grid>
+                </Grid>
+            </Border>
+        </DataTemplate>
+
+        <!-- Sessão atual -->
+        <DataTemplate x:Key="W.SessionStatus">
+            <Border Style="{StaticResource Card}" DataContext="{Binding DataContext, RelativeSource={RelativeSource AncestorType=UserControl}}">
+                <DockPanel>
+                    <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,12">
+                        <Path Style="{StaticResource Icon}" Data="{StaticResource I.Games}" Stroke="{DynamicResource B.Secondary}" />
+                        <TextBlock Text="Sessão atual" Style="{StaticResource Text.Subtitle}" Margin="10,0,0,0" />
+                    </StackPanel>
+                    <WrapPanel DockPanel.Dock="Bottom" Margin="0,14,0,0" Visibility="{Binding SessionActive, Converter={StaticResource Vis}}">
+                        <Button Command="{Binding TogglePauseCommand}" Margin="0,0,8,8">
+                            <Button.Style>
+                                <Style TargetType="Button" BasedOn="{StaticResource Button.Ghost}">
+                                    <Setter Property="Content" Value="Pausar gravação" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Paused}" Value="True"><Setter Property="Content" Value="Retomar gravação" /></DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                        </Button>
+                        <Button Content="Encerrar sessão" Style="{StaticResource Button.Ghost}" Command="{Binding EndSessionCommand}" Margin="0,0,8,8" />
+                        <Button Content="Confirmar jogo" Style="{StaticResource Button.Primary}" Command="{Binding ConfirmGameCommand}" Margin="0,0,8,8"
+                                Visibility="{Binding SessionUnconfirmed, Converter={StaticResource Vis}}" />
+                    </WrapPanel>
+                    <StackPanel>
+                        <TextBlock Text="{Binding SessionGame}" Style="{StaticResource Text.Title}" TextTrimming="CharacterEllipsis" />
+                        <TextBlock Text="{Binding SessionExecutable}" Style="{StaticResource Text.Muted}" Margin="0,4,0,0" />
+                        <StackPanel Orientation="Horizontal" Margin="0,12,0,0" Visibility="{Binding SessionActive, Converter={StaticResource Vis}}">
+                            <Path Style="{StaticResource Icon}" Data="{StaticResource I.Clock}" Stroke="{DynamicResource B.TextMuted}" Width="15" Height="15" />
+                            <TextBlock Text="{Binding SessionDuration}" Margin="8,0,0,0" FontFamily="{DynamicResource F.Display}" FontSize="16" />
+                        </StackPanel>
+                        <TextBlock Text="{Binding CaptureText}" Style="{StaticResource Text.Caption}" Margin="0,8,0,0" TextWrapping="Wrap" />
+                        <Border Style="{StaticResource Chip}" HorizontalAlignment="Left" Margin="0,10,0,0" BorderBrush="{DynamicResource B.Warning}"
+                                Visibility="{Binding SessionUnconfirmed, Converter={StaticResource Vis}}">
+                            <TextBlock Text="Detectado automaticamente — confirme se é um jogo" Foreground="{DynamicResource B.Warning}" FontSize="12" />
+                        </Border>
+                    </StackPanel>
+                </DockPanel>
+            </Border>
+        </DataTemplate>
+
+        <!-- Gráficos ao vivo -->
+        <DataTemplate x:Key="W.LoadChart">
+            <Border Style="{StaticResource Card}" DataContext="{Binding DataContext, RelativeSource={RelativeSource AncestorType=UserControl}}">
+                <DockPanel>
+                    <DockPanel DockPanel.Dock="Top" Margin="0,0,0,10">
+                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                            <Ellipse Width="8" Height="8" Fill="{DynamicResource B.Chart0}" Margin="0,0,6,0" /><TextBlock Text="CPU" Style="{StaticResource Text.Caption}" Margin="0,0,12,0" />
+                            <Ellipse Width="8" Height="8" Fill="{DynamicResource B.Chart2}" Margin="0,0,6,0" /><TextBlock Text="GPU" Style="{StaticResource Text.Caption}" />
+                        </StackPanel>
+                        <TextBlock Text="Uso de CPU e GPU — últimos 2 min" Style="{StaticResource Text.Subtitle}" />
+                    </DockPanel>
+                    <fx:LiveChart Height="150" Series1="{Binding Live.CpuLoad}" Series2="{Binding Live.GpuLoad}" Revision="{Binding Revision}" Minimum="0" Maximum="100" Unit="%"
+                                  Brush1="{DynamicResource B.Chart0}" Brush2="{DynamicResource B.Chart2}" GridBrush="{DynamicResource B.Border}" LabelBrush="{DynamicResource B.TextMuted}" />
+                </DockPanel>
+            </Border>
+        </DataTemplate>
+
+        <DataTemplate x:Key="W.TemperatureChart">
+            <Border Style="{StaticResource Card}" DataContext="{Binding DataContext, RelativeSource={RelativeSource AncestorType=UserControl}}">
+                <DockPanel>
+                    <DockPanel DockPanel.Dock="Top" Margin="0,0,0,10">
+                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                            <Ellipse Width="8" Height="8" Fill="{DynamicResource B.Chart3}" Margin="0,0,6,0" /><TextBlock Text="CPU" Style="{StaticResource Text.Caption}" Margin="0,0,12,0" />
+                            <Ellipse Width="8" Height="8" Fill="{DynamicResource B.Chart1}" Margin="0,0,6,0" /><TextBlock Text="GPU" Style="{StaticResource Text.Caption}" />
+                        </StackPanel>
+                        <TextBlock Text="Temperaturas — últimos 2 min" Style="{StaticResource Text.Subtitle}" />
+                    </DockPanel>
+                    <fx:LiveChart Height="150" Series1="{Binding GpuTemperatureSeries}" Series2="{Binding CpuTemperatureSeries}" Revision="{Binding Revision}" Minimum="20" Unit="{Binding TemperatureUnit}"
+                                  Brush1="{DynamicResource B.Chart1}" Brush2="{DynamicResource B.Chart3}" Fill="True" GridBrush="{DynamicResource B.Border}" LabelBrush="{DynamicResource B.TextMuted}" />
+                </DockPanel>
+            </Border>
+        </DataTemplate>
+
+        <DataTemplate x:Key="W.FrameTimeChart">
+            <Border Style="{StaticResource Card}" DataContext="{Binding DataContext, RelativeSource={RelativeSource AncestorType=UserControl}}">
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Top" Text="Frametime — últimos quadros (ms)" Style="{StaticResource Text.Subtitle}" Margin="0,0,0,10" />
+                    <Grid Height="150">
+                        <fx:LiveChart Series1="{Binding Live.RecentFrameTimes}" Revision="{Binding Revision}" Capacity="240" Minimum="0" Unit=""
+                                      Brush1="{DynamicResource B.Chart3}" GridBrush="{DynamicResource B.Border}" LabelBrush="{DynamicResource B.TextMuted}" StrokeThickness="1.4" />
+                        <TextBlock Text="Sem dados de quadros" Style="{StaticResource Text.Muted}" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                   Visibility="{Binding HasFrames, Converter={StaticResource NotVis}}" />
+                    </Grid>
+                </DockPanel>
+            </Border>
+        </DataTemplate>
+
+        <DataTemplate x:Key="W.CoreLoads">
+            <Border Style="{StaticResource Card}" DataContext="{Binding DataContext, RelativeSource={RelativeSource AncestorType=UserControl}}">
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Top" Text="Uso por núcleo lógico" Style="{StaticResource Text.Subtitle}" Margin="0,0,0,12" />
+                    <Grid>
+                        <TextBlock Text="Uso por núcleo indisponível.">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock" BasedOn="{StaticResource Text.Muted}">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Cores.Count}" Value="0"><Setter Property="Visibility" Value="Visible" /></DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                        <ItemsControl ItemsSource="{Binding Cores}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="{x:Type vm:CoreLoadItem}">
+                                    <StackPanel Width="30" Margin="0,0,6,8" ToolTip="{Binding Load, StringFormat='{}{0:0}%'}">
+                                        <Border Height="56" Background="{DynamicResource B.SurfaceHigh}" CornerRadius="4">
+                                            <Border VerticalAlignment="Bottom" CornerRadius="4" Background="{DynamicResource B.HeroGradient}"
+                                                    Height="{Binding Load, Converter={StaticResource Mul}, ConverterParameter=0.56}" />
+                                        </Border>
+                                        <TextBlock Text="{Binding Label}" Style="{StaticResource Text.Caption}" HorizontalAlignment="Center" Margin="0,3,0,0" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </Grid>
+                </DockPanel>
+            </Border>
+        </DataTemplate>
+
+        <DataTemplate x:Key="W.SystemInfo">
+            <Border Style="{StaticResource Card}" DataContext="{Binding DataContext, RelativeSource={RelativeSource AncestorType=UserControl}}">
+                <DockPanel>
+                    <DockPanel DockPanel.Dock="Top" Margin="0,0,0,10">
+                        <Button DockPanel.Dock="Right" Content="Ver hardware" Style="{StaticResource Button.Ghost}" Padding="10,5" Command="{Binding OpenHardwareCommand}" />
+                        <TextBlock Text="Resumo do sistema" Style="{StaticResource Text.Subtitle}" VerticalAlignment="Center" />
+                    </DockPanel>
+                    <ItemsControl ItemsSource="{Binding SystemInfo}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="{x:Type vm:StatLine}">
+                                <Grid Margin="0,4">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="130" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="{Binding Label}" Style="{StaticResource Text.Muted}" />
+                                    <TextBlock Grid.Column="1" Text="{Binding Value}" TextTrimming="CharacterEllipsis" ToolTip="{Binding Value}" />
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </DockPanel>
+            </Border>
+        </DataTemplate>
+
+        <DataTemplate x:Key="W.RecentSessions">
+            <Border Style="{StaticResource Card}" DataContext="{Binding DataContext, RelativeSource={RelativeSource AncestorType=UserControl}}">
+                <DockPanel>
+                    <DockPanel DockPanel.Dock="Top" Margin="0,0,0,10">
+                        <Button DockPanel.Dock="Right" Content="Ver todos" Style="{StaticResource Button.Ghost}" Padding="10,5" Command="{Binding OpenReportsCommand}" />
+                        <TextBlock Text="Sessões recentes" Style="{StaticResource Text.Subtitle}" VerticalAlignment="Center" />
+                    </DockPanel>
+                    <Grid>
+                        <TextBlock Text="Nenhuma sessão gravada ainda. Abra um jogo para começar.">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock" BasedOn="{StaticResource Text.Muted}">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding RecentSessions.Count}" Value="0"><Setter Property="Visibility" Value="Visible" /></DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                        <ItemsControl ItemsSource="{Binding RecentSessions}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="{x:Type domain:SessionListItem}">
+                                    <Button Style="{StaticResource Button.Ghost}" HorizontalContentAlignment="Stretch" Margin="0,0,0,6" Padding="12,8"
+                                            Command="{Binding DataContext.OpenSessionCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}" CommandParameter="{Binding}">
+                                        <DockPanel>
+                                            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                                                <TextBlock Text="{Binding AverageFps, StringFormat='{}{0:0} FPS', TargetNullValue='— FPS'}" FontFamily="{DynamicResource F.Display}" Foreground="{DynamicResource B.Primary}" />
+                                            </StackPanel>
+                                            <TextBlock Text="{Binding GameName}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                            <TextBlock Text="{Binding StartedAt, StringFormat=' · {0:dd/MM HH:mm}'}" Style="{StaticResource Text.Muted}" />
+                                        </DockPanel>
+                                    </Button>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </Grid>
+                </DockPanel>
+            </Border>
+        </DataTemplate>
+    </UserControl.Resources>
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="24,8,24,24">
+        <StackPanel>
+            <DockPanel Margin="0,0,0,18">
+                <Button DockPanel.Dock="Right" Style="{StaticResource Button.Ghost}" Command="{Binding CustomizeDashboardCommand}" VerticalAlignment="Center">
+                    <StackPanel Orientation="Horizontal">
+                        <Path Style="{StaticResource Icon}" Data="{StaticResource I.Edit}" Width="15" Height="15" />
+                        <TextBlock Text="Personalizar painel" Margin="8,0,0,0" />
+                    </StackPanel>
+                </Button>
+                <StackPanel>
+                    <TextBlock Text="Painel" Style="{StaticResource Text.Hero}" />
+                    <TextBlock Text="Leituras reais dos sensores deste computador. Valores indisponíveis aparecem como “—”, nunca como zero." Style="{StaticResource Text.Muted}" Margin="0,4,0,0" />
+                </StackPanel>
+            </DockPanel>
+
+            <ItemsControl ItemsSource="{Binding Widgets}" ItemTemplateSelector="{StaticResource WidgetSelector}" Focusable="False">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <fx:DashboardPanel MinColumnWidth="270" Spacing="16" />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemContainerStyle>
+                    <Style TargetType="ContentPresenter">
+                        <Setter Property="fx:DashboardPanel.Wide" Value="{Binding Wide}" />
+                    </Style>
+                </ItemsControl.ItemContainerStyle>
+            </ItemsControl>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

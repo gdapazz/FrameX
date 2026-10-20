@@ -1,0 +1,141 @@
+<UserControl x:Class="Framex.App.Views.CompareView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:Framex.App.ViewModels"
+             xmlns:fx="clr-namespace:Framex.App.Controls"
+             mc:Ignorable="d" d:DataContext="{d:DesignInstance vm:CompareViewModel}" d:DesignWidth="1100" d:DesignHeight="800">
+    <UserControl.Resources>
+        <fx:BoolToVisibilityConverter x:Key="Vis" />
+        <fx:NullToVisibilityConverter x:Key="NullVis" />
+    </UserControl.Resources>
+
+    <Grid>
+        <TextBlock Text="Carregando comparação…" Style="{StaticResource Text.Subtitle}" HorizontalAlignment="Center" VerticalAlignment="Center"
+                   Visibility="{Binding IsLoading, Converter={StaticResource Vis}}" />
+        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="{Binding Error, Converter={StaticResource NullVis}}">
+            <TextBlock Text="{Binding Error}" Style="{StaticResource Text.Subtitle}" Foreground="{DynamicResource B.Error}" />
+            <Button Content="Voltar aos relatórios" Command="{Binding BackCommand}" HorizontalAlignment="Center" Margin="0,14,0,0" />
+        </StackPanel>
+
+        <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="24,8,24,24">
+            <ScrollViewer.Style>
+                <Style TargetType="ScrollViewer">
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding IsLoading}" Value="True"><Setter Property="Visibility" Value="Collapsed" /></DataTrigger>
+                        <DataTrigger Binding="{Binding Error, Converter={StaticResource NullVis}}" Value="Visible"><Setter Property="Visibility" Value="Collapsed" /></DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </ScrollViewer.Style>
+            <StackPanel>
+                <DockPanel Margin="0,0,0,18">
+                    <Button DockPanel.Dock="Left" Style="{StaticResource Button.Icon}" Command="{Binding BackCommand}" ToolTip="Voltar" VerticalAlignment="Top" Margin="0,6,12,0">
+                        <Path Style="{StaticResource Icon}" Data="{StaticResource I.ChevronLeft}" />
+                    </Button>
+                    <StackPanel>
+                        <TextBlock Text="Comparar sessões" Style="{StaticResource Text.Hero}" />
+                        <TextBlock Text="A sessão mais antiga aparece como A. A variação indica B em relação a A." Style="{StaticResource Text.Muted}" Margin="0,4,0,0" />
+                    </StackPanel>
+                </DockPanel>
+
+                <Grid Margin="0,0,0,16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="16" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Border Style="{StaticResource Card}">
+                        <DockPanel>
+                            <Button DockPanel.Dock="Right" Content="Abrir relatório" Style="{StaticResource Button.Ghost}" Command="{Binding OpenACommand}" VerticalAlignment="Center" />
+                            <Border Width="36" Height="36" CornerRadius="10" Background="{DynamicResource B.Chart0}" Margin="0,0,12,0">
+                                <TextBlock Text="A" FontFamily="{DynamicResource F.Display}" FontWeight="Bold" FontSize="18" Foreground="{DynamicResource B.OnPrimary}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Border>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="{Binding TitleA}" Style="{StaticResource Text.Subtitle}" TextTrimming="CharacterEllipsis" />
+                                <TextBlock Text="{Binding SubtitleA}" Style="{StaticResource Text.Caption}" />
+                            </StackPanel>
+                        </DockPanel>
+                    </Border>
+                    <Border Grid.Column="2" Style="{StaticResource Card}">
+                        <DockPanel>
+                            <Button DockPanel.Dock="Right" Content="Abrir relatório" Style="{StaticResource Button.Ghost}" Command="{Binding OpenBCommand}" VerticalAlignment="Center" />
+                            <Border Width="36" Height="36" CornerRadius="10" Background="{DynamicResource B.Chart2}" Margin="0,0,12,0">
+                                <TextBlock Text="B" FontFamily="{DynamicResource F.Display}" FontWeight="Bold" FontSize="18" Foreground="{DynamicResource B.OnPrimary}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Border>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="{Binding TitleB}" Style="{StaticResource Text.Subtitle}" TextTrimming="CharacterEllipsis" />
+                                <TextBlock Text="{Binding SubtitleB}" Style="{StaticResource Text.Caption}" />
+                            </StackPanel>
+                        </DockPanel>
+                    </Border>
+                </Grid>
+
+                <Border Style="{StaticResource Card}" Margin="0,0,0,16" BorderBrush="{DynamicResource B.Warning}" Visibility="{Binding Warnings.Count, Converter={x:Static fx:CountToVisibilityConverter.Instance}}">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                            <Path Style="{StaticResource Icon}" Data="{StaticResource I.Warning}" Stroke="{DynamicResource B.Warning}" />
+                            <TextBlock Text="As condições das sessões são diferentes — compare com cautela" Style="{StaticResource Text.Subtitle}" Margin="10,0,0,0" />
+                        </StackPanel>
+                        <ItemsControl ItemsSource="{Binding Warnings}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding StringFormat='• {0}'}" TextWrapping="Wrap" Margin="0,2" />
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource Card}">
+                    <StackPanel>
+                        <Grid Margin="0,0,0,8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="2*" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="1.4*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="MÉTRICA" Style="{StaticResource Text.Caption}" FontWeight="SemiBold" />
+                            <TextBlock Grid.Column="1" Text="A" Style="{StaticResource Text.Caption}" FontWeight="SemiBold" />
+                            <TextBlock Grid.Column="2" Text="B" Style="{StaticResource Text.Caption}" FontWeight="SemiBold" />
+                            <TextBlock Grid.Column="3" Text="VARIAÇÃO (B − A)" Style="{StaticResource Text.Caption}" FontWeight="SemiBold" />
+                        </Grid>
+                        <ItemsControl ItemsSource="{Binding Rows}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="{x:Type vm:CompareRow}">
+                                    <Border BorderBrush="{DynamicResource B.Border}" BorderThickness="0,1,0,0" Padding="0,8">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="2*" />
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="1.4*" />
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Text="{Binding Label}" />
+                                            <TextBlock Grid.Column="1" Text="{Binding A}" FontFamily="{DynamicResource F.Display}" FontSize="14" />
+                                            <TextBlock Grid.Column="2" Text="{Binding B}" FontFamily="{DynamicResource F.Display}" FontSize="14" />
+                                            <TextBlock Grid.Column="3" Text="{Binding Delta}" FontFamily="{DynamicResource F.Display}" FontSize="14">
+                                                <TextBlock.Style>
+                                                    <Style TargetType="TextBlock">
+                                                        <Setter Property="Foreground" Value="{DynamicResource B.TextMuted}" />
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding Tone}" Value="Good"><Setter Property="Foreground" Value="{DynamicResource B.Success}" /></DataTrigger>
+                                                            <DataTrigger Binding="{Binding Tone}" Value="Bad"><Setter Property="Foreground" Value="{DynamicResource B.Error}" /></DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </TextBlock.Style>
+                                            </TextBlock>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <TextBlock Margin="0,12,0,0" Style="{StaticResource Text.Caption}" TextWrapping="Wrap"
+                                   Text="Cores indicam apenas se FPS/frametime melhoraram ou pioraram (variação ≥ 1%). Diferenças de temperatura, uso ou consumo não são classificadas como boas ou ruins, e a comparação não identifica a causa das diferenças." />
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

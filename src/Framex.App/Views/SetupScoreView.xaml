@@ -1,0 +1,691 @@
+<UserControl x:Class="Framex.App.Views.SetupScoreView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:Framex.App.ViewModels"
+             xmlns:fx="clr-namespace:Framex.App.Controls"
+             xmlns:core="clr-namespace:Framex.Core.SetupScore;assembly=Framex.Core"
+             mc:Ignorable="d" d:DataContext="{d:DesignInstance vm:SetupScoreViewModel}" d:DesignWidth="1100" d:DesignHeight="900">
+    <UserControl.Resources>
+        <fx:BoolToVisibilityConverter x:Key="Vis" />
+        <fx:BoolToVisibilityConverter x:Key="NotVis" Invert="True" />
+        <fx:NullToVisibilityConverter x:Key="NullVis" />
+        <fx:InvertBoolConverter x:Key="Not" />
+
+        <Style x:Key="Tag" TargetType="Border" BasedOn="{StaticResource Chip}">
+            <Setter Property="Padding" Value="8,2" />
+            <Setter Property="Margin" Value="0,0,6,6" />
+        </Style>
+
+        <Style x:Key="RowLabel" TargetType="TextBlock" BasedOn="{StaticResource Text.Muted}">
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Margin" Value="0,1,10,1" />
+        </Style>
+        <Style x:Key="RowValue" TargetType="TextBlock" BasedOn="{StaticResource Text.Body}">
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Margin" Value="0,1" />
+        </Style>
+
+        <DataTemplate x:Key="FactTemplate" DataType="{x:Type core:Fact}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" MinWidth="120" SharedSizeGroup="FactLabel" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="{Binding Label}" Style="{StaticResource RowLabel}" />
+                <TextBlock Grid.Column="1" Text="{Binding Value}" Style="{StaticResource RowValue}" />
+            </Grid>
+        </DataTemplate>
+
+        <DataTemplate x:Key="ChoiceTemplate" DataType="{x:Type vm:ChoiceItem}">
+            <Button Style="{StaticResource Button.Ghost}" Margin="0,0,6,6" HorizontalContentAlignment="Left" ToolTip="{Binding Detail}"
+                    Command="{Binding DataContext.ChooseCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}">
+                <StackPanel Orientation="Horizontal">
+                    <Path Style="{StaticResource Icon}" Data="{StaticResource I.Check}" Width="13" Height="13" />
+                    <TextBlock Text="{Binding Label}" Margin="8,0,0,0" TextTrimming="CharacterEllipsis" MaxWidth="320" />
+                </StackPanel>
+            </Button>
+        </DataTemplate>
+    </UserControl.Resources>
+
+    <ScrollViewer x:Name="Scroller" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="24,8,24,24">
+        <StackPanel MaxWidth="1240" Grid.IsSharedSizeScope="True">
+            <!-- ====================== Cabeçalho ====================== -->
+            <DockPanel Margin="0,0,0,16">
+                <Button DockPanel.Dock="Right" Style="{StaticResource Button.Ghost}" VerticalAlignment="Top" Command="{Binding UpdateDatabasesCommand}"
+                        ToolTip="Baixa as listas públicas mais recentes do Blender Open Data (somente sob seu comando)">
+                    <StackPanel Orientation="Horizontal">
+                        <Path Style="{StaticResource Icon}" Data="{StaticResource I.Refresh}" Width="15" Height="15" />
+                        <TextBlock Margin="8,0,0,0">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Text" Value="Atualizar bases" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsUpdating}" Value="True"><Setter Property="Text" Value="Atualizando…" /></DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </StackPanel>
+                </Button>
+                <StackPanel>
+                    <TextBlock Text="NOTA DO SETUP" Style="{StaticResource Text.Hero}" Foreground="{DynamicResource B.HeroGradient}" />
+                    <TextBlock Text="Descubra o potencial do seu hardware." Style="{StaticResource Text.Subtitle}" Margin="0,2,0,0" />
+                    <TextBlock Style="{StaticResource Text.Muted}" Margin="0,6,0,0" MaxWidth="820" HorizontalAlignment="Left"
+                               Text="O FRAMEX identifica GPU, CPU, memória e armazenamento, procura cada componente em bases públicas e calcula uma nota de 0 a 1000 com critérios documentados." />
+                    <TextBlock Style="{StaticResource Text.Caption}" Margin="0,6,0,0" MaxWidth="820" HorizontalAlignment="Left"
+                               Text="Os resultados dependem da cobertura e da atualização das fontes consultadas. Componentes não encontrados não recebem nota inventada." />
+                    <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                        <Path Style="{StaticResource Icon}" Data="{StaticResource I.Link}" Width="12" Height="12" Stroke="{DynamicResource B.TextMuted}" Margin="0,0,6,0" />
+                        <TextBlock Text="{Binding DatabaseStatus}" Style="{StaticResource Text.Caption}" />
+                    </StackPanel>
+                </StackPanel>
+            </DockPanel>
+
+            <!-- Mensagem (cancelamento, tempo limite, falhas) -->
+            <Border Margin="0,0,0,14" Padding="14,10" CornerRadius="{DynamicResource R.CornerSmall}" Background="{DynamicResource B.SurfaceAlt}" BorderThickness="1"
+                    Visibility="{Binding Message, Converter={StaticResource NullVis}}">
+                <Border.Style>
+                    <Style TargetType="Border">
+                        <Setter Property="BorderBrush" Value="{DynamicResource B.Primary}" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding MessageIsError}" Value="True"><Setter Property="BorderBrush" Value="{DynamicResource B.Warning}" /></DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Border.Style>
+                <DockPanel>
+                    <Button DockPanel.Dock="Right" Style="{StaticResource Button.Ghost}" Command="{Binding EvaluateCommand}" Margin="10,0,0,0"
+                            Visibility="{Binding MessageIsError, Converter={StaticResource Vis}}">
+                        <StackPanel Orientation="Horizontal">
+                            <Path Style="{StaticResource Icon}" Data="{StaticResource I.Refresh}" Width="14" Height="14" />
+                            <TextBlock Text="Tentar novamente" Margin="8,0,0,0" />
+                        </StackPanel>
+                    </Button>
+                    <Path Style="{StaticResource Icon}" Data="{StaticResource I.Info}" Margin="0,0,10,0" Stroke="{DynamicResource B.Warning}" VerticalAlignment="Top" />
+                    <TextBlock Text="{Binding Message}" Style="{StaticResource Text.Body}" VerticalAlignment="Center" />
+                </DockPanel>
+            </Border>
+
+            <!-- ====================== Preparação ====================== -->
+            <StackPanel Visibility="{Binding IsPreparation, Converter={StaticResource Vis}}">
+                <Border Style="{StaticResource Card}" Margin="0,0,0,14">
+                    <StackPanel>
+                        <DockPanel Margin="0,0,0,12">
+                            <Button DockPanel.Dock="Right" Style="{StaticResource Button.Ghost}" Command="{Binding IdentifyCommand}" IsEnabled="{Binding IsIdentifying, Converter={StaticResource Not}}">
+                                <StackPanel Orientation="Horizontal">
+                                    <Path Style="{StaticResource Icon}" Data="{StaticResource I.Search}" Width="14" Height="14" />
+                                    <TextBlock Text="Identificar novamente" Margin="8,0,0,0" />
+                                </StackPanel>
+                            </Button>
+                            <StackPanel>
+                                <TextBlock Text="COMPONENTES DETECTADOS" Style="{StaticResource Text.Section}" Margin="0" />
+                                <TextBlock Margin="0,2,0,0">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock" BasedOn="{StaticResource Text.Caption}">
+                                            <Setter Property="Text" Value="Identificação local pelo Windows, sem internet e sem privilégios de administrador." />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsIdentifying}" Value="True"><Setter Property="Text" Value="Identificando componentes…" /></DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                            </StackPanel>
+                        </DockPanel>
+                        <ItemsControl ItemsSource="{Binding Detected}" Focusable="False">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate><fx:DashboardPanel MinColumnWidth="240" Spacing="12" /></ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="{x:Type vm:PrepItem}">
+                                    <Border Style="{StaticResource Card.Inset}" Padding="14,12">
+                                        <DockPanel>
+                                            <Border Width="38" Height="38" CornerRadius="10" Background="{DynamicResource B.PrimarySoft}" Margin="0,0,12,0" VerticalAlignment="Top">
+                                                <Path Style="{StaticResource Icon}" Data="{Binding Icon, Converter={x:Static fx:ResourceKeyConverter.Instance}}" Stroke="{DynamicResource B.Primary}"
+                                                      HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                            </Border>
+                                            <StackPanel>
+                                                <TextBlock Text="{Binding Category}" Style="{StaticResource Text.Caption}" />
+                                                <TextBlock Text="{Binding Name}" TextWrapping="Wrap" ToolTip="{Binding Name}">
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock">
+                                                            <Setter Property="FontWeight" Value="SemiBold" />
+                                                            <Setter Property="Foreground" Value="{DynamicResource B.Text}" />
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding Pending}" Value="True">
+                                                                    <Setter Property="Foreground" Value="{DynamicResource B.TextMuted}" />
+                                                                    <Setter Property="FontWeight" Value="Normal" />
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
+                                                <TextBlock Text="{Binding Detail}" Style="{StaticResource Text.Caption}" Margin="0,2,0,0" />
+                                            </StackPanel>
+                                        </DockPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource Card}" Margin="0,0,0,18">
+                    <DockPanel>
+                        <Button DockPanel.Dock="Right" Style="{StaticResource Button.Primary}" Command="{Binding EvaluateCommand}" Padding="28,14" VerticalAlignment="Center" Margin="16,0,0,0"
+                                AutomationProperties.Name="Avaliar meu setup">
+                            <StackPanel Orientation="Horizontal">
+                                <Path Style="{StaticResource Icon}" Data="{StaticResource I.Gauge}" Stroke="{DynamicResource B.OnPrimary}" />
+                                <TextBlock Text="AVALIAR MEU SETUP" Margin="10,0,0,0" FontFamily="{DynamicResource F.Display}" FontWeight="Bold" FontSize="15" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+                        <StackPanel>
+                            <CheckBox IsChecked="{Binding IncludeStorage}" IsEnabled="{Binding IsRunning, Converter={StaticResource Not}}" AutomationProperties.Name="Considerar armazenamento na nota geral">
+                                <TextBlock Text="Considerar armazenamento na nota geral" FontWeight="SemiBold" />
+                            </CheckBox>
+                            <TextBlock Style="{StaticResource Text.Muted}" Margin="26,4,0,0" FontSize="12"
+                                       Text="A capacidade total de armazenamento tem peso reduzido. Desativar esta opção faz a nota considerar apenas CPU, GPU e RAM." />
+                        </StackPanel>
+                    </DockPanel>
+                </Border>
+            </StackPanel>
+
+            <!-- ====================== Em andamento ====================== -->
+            <Border Style="{StaticResource Card}" Margin="0,0,0,18" Visibility="{Binding IsRunningState, Converter={StaticResource Vis}}">
+                <fx:DashboardPanel MinColumnWidth="360" Spacing="18">
+                    <StackPanel VerticalAlignment="Center">
+                        <fx:SetupScanAnimation x:Name="ScanAnimation" IsActive="{Binding IsRunningState}" Level="{Binding Animations}" MaxWidth="520" HorizontalAlignment="Center"
+                                               Stroke="{DynamicResource B.Primary}" Accent="{DynamicResource B.Accent}" Fill="{DynamicResource B.SurfaceAlt}" Detail="{DynamicResource B.TextMuted}"
+                                               AutomationProperties.Name="Animação de avaliação" />
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,10,0,0">
+                            <TextBlock Text="Avaliando seu setup" Style="{StaticResource Text.Title}" />
+                            <fx:AnimatedEllipsis Level="{Binding Animations}" Width="26" FontFamily="{DynamicResource F.Display}" FontSize="{DynamicResource S.Title}"
+                                                 FontWeight="SemiBold" Foreground="{DynamicResource B.Text}" />
+                        </StackPanel>
+                        <TextBlock HorizontalAlignment="Center" Margin="0,4,0,0" TextAlignment="Center">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock" BasedOn="{StaticResource Text.Caption}">
+                                    <Setter Property="Text" Value="Armazenamento considerado nesta avaliação." />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IncludeStorage}" Value="False"><Setter Property="Text" Value="Armazenamento desativado nesta avaliação." /></DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </StackPanel>
+
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="ETAPAS" Style="{StaticResource Text.Section}" />
+                        <ItemsControl ItemsSource="{Binding Steps}" Focusable="False">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="{x:Type vm:StepItem}">
+                                    <DockPanel Margin="0,0,0,12">
+                                        <Grid Width="22" Height="22" Margin="0,0,12,0" VerticalAlignment="Top">
+                                            <Ellipse x:Name="Dot" Width="18" Height="18" StrokeThickness="1.6" Stroke="{DynamicResource B.Border}" />
+                                            <Path x:Name="Glyph" Style="{StaticResource Icon}" Width="11" Height="11" Visibility="Collapsed" StrokeThickness="2.4" />
+                                        </Grid>
+                                        <StackPanel>
+                                            <TextBlock x:Name="Label" Text="{Binding Label}" Foreground="{DynamicResource B.TextMuted}" />
+                                            <TextBlock Text="{Binding Detail}" Style="{StaticResource Text.Caption}" Visibility="{Binding Detail, Converter={StaticResource NullVis}}" />
+                                        </StackPanel>
+                                    </DockPanel>
+                                    <DataTemplate.Triggers>
+                                        <DataTrigger Binding="{Binding State}" Value="Running">
+                                            <Setter TargetName="Dot" Property="Stroke" Value="{DynamicResource B.Primary}" />
+                                            <Setter TargetName="Dot" Property="Fill" Value="{DynamicResource B.PrimarySoft}" />
+                                            <Setter TargetName="Label" Property="Foreground" Value="{DynamicResource B.Text}" />
+                                            <Setter TargetName="Label" Property="FontWeight" Value="SemiBold" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding State}" Value="Done">
+                                            <Setter TargetName="Dot" Property="Fill" Value="{DynamicResource B.Success}" />
+                                            <Setter TargetName="Dot" Property="Stroke" Value="{DynamicResource B.Success}" />
+                                            <Setter TargetName="Glyph" Property="Visibility" Value="Visible" />
+                                            <Setter TargetName="Glyph" Property="Data" Value="{StaticResource I.Check}" />
+                                            <Setter TargetName="Glyph" Property="Stroke" Value="{DynamicResource B.OnPrimary}" />
+                                            <Setter TargetName="Label" Property="Foreground" Value="{DynamicResource B.Text}" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding State}" Value="Warning">
+                                            <Setter TargetName="Dot" Property="Stroke" Value="{DynamicResource B.Warning}" />
+                                            <Setter TargetName="Glyph" Property="Visibility" Value="Visible" />
+                                            <Setter TargetName="Glyph" Property="Data" Value="{StaticResource I.Warning}" />
+                                            <Setter TargetName="Glyph" Property="Stroke" Value="{DynamicResource B.Warning}" />
+                                            <Setter TargetName="Label" Property="Foreground" Value="{DynamicResource B.Text}" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding State}" Value="Failed">
+                                            <Setter TargetName="Dot" Property="Stroke" Value="{DynamicResource B.Error}" />
+                                            <Setter TargetName="Glyph" Property="Visibility" Value="Visible" />
+                                            <Setter TargetName="Glyph" Property="Data" Value="{StaticResource I.Close}" />
+                                            <Setter TargetName="Glyph" Property="Stroke" Value="{DynamicResource B.Error}" />
+                                            <Setter TargetName="Label" Property="Foreground" Value="{DynamicResource B.Error}" />
+                                        </DataTrigger>
+                                    </DataTemplate.Triggers>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <Button Style="{StaticResource Button.Ghost}" Command="{Binding CancelCommand}" HorizontalAlignment="Left" Margin="34,4,0,0">
+                            <StackPanel Orientation="Horizontal">
+                                <Path Style="{StaticResource Icon}" Data="{StaticResource I.Close}" Width="13" Height="13" />
+                                <TextBlock Text="Cancelar" Margin="8,0,0,0" />
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+                </fx:DashboardPanel>
+            </Border>
+
+            <!-- ====================== Resultado ====================== -->
+            <StackPanel Visibility="{Binding IsResult, Converter={StaticResource Vis}}">
+                <Border Style="{StaticResource Card.Inset}" Margin="0,0,0,12" Visibility="{Binding HistoryBanner, Converter={StaticResource NullVis}}">
+                    <DockPanel>
+                        <Path Style="{StaticResource Icon}" Data="{StaticResource I.Clock}" Width="15" Height="15" Margin="0,0,10,0" Stroke="{DynamicResource B.Primary}" />
+                        <TextBlock Text="{Binding HistoryBanner}" Style="{StaticResource Text.Body}" />
+                    </DockPanel>
+                </Border>
+
+                <Border Style="{StaticResource Card}" Margin="0,0,0,14">
+                    <fx:DashboardPanel MinColumnWidth="300" Spacing="20">
+                        <Grid Width="230" Height="230" HorizontalAlignment="Center">
+                            <fx:ArcGauge Value="{Binding OverallValue}" Maximum="1000" Thickness="16" Mode="Ring" Stroke="{DynamicResource B.HeroGradient}" Track="{DynamicResource B.SurfaceHigh}"
+                                         AutomationProperties.Name="Nota geral" />
+                            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <TextBlock Text="{Binding OverallText}" Style="{StaticResource Text.Display}" HorizontalAlignment="Center" />
+                                <TextBlock Text="de 1000" Style="{StaticResource Text.Caption}" HorizontalAlignment="Center" Margin="0,-6,0,0" />
+                            </StackPanel>
+                        </Grid>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="CLASSIFICAÇÃO" Style="{StaticResource Text.Section}" Margin="0,0,0,2" />
+                            <TextBlock Text="{Binding TierText}" Style="{StaticResource Text.Hero}" TextWrapping="Wrap" />
+                            <WrapPanel Margin="0,10,0,0">
+                                <Border>
+                                    <Border.Style>
+                                        <Style TargetType="Border" BasedOn="{StaticResource Tag}">
+                                            <Setter Property="BorderBrush" Value="{DynamicResource B.Warning}" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsComplete}" Value="True"><Setter Property="BorderBrush" Value="{DynamicResource B.Success}" /></DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Border.Style>
+                                    <TextBlock Text="{Binding CompletenessText}" FontSize="12" />
+                                </Border>
+                                <Border Style="{StaticResource Tag}"><TextBlock Text="{Binding CoverageText}" FontSize="12" /></Border>
+                                <Border Style="{StaticResource Tag}"><TextBlock Text="{Binding ConfidenceText}" FontSize="12" /></Border>
+                            </WrapPanel>
+                            <TextBlock Text="{Binding ResultMeta}" Style="{StaticResource Text.Caption}" Margin="0,4,0,14" />
+                            <WrapPanel>
+                                <Button Style="{StaticResource Button.Primary}" Command="{Binding RedoCommand}" Margin="0,0,8,8">
+                                    <StackPanel Orientation="Horizontal">
+                                        <Path Style="{StaticResource Icon}" Data="{StaticResource I.Refresh}" Width="14" Height="14" Stroke="{DynamicResource B.OnPrimary}" />
+                                        <TextBlock Text="Refazer avaliação" Margin="8,0,0,0" />
+                                    </StackPanel>
+                                </Button>
+                                <Button Style="{StaticResource Button.Ghost}" Command="{Binding CompareWithPreviousCommand}" Margin="0,0,8,8"
+                                        ToolTip="Compara com a avaliação salva imediatamente anterior">
+                                    <StackPanel Orientation="Horizontal">
+                                        <Path Style="{StaticResource Icon}" Data="{StaticResource I.Compare}" Width="14" Height="14" />
+                                        <TextBlock Text="Comparar com anterior" Margin="8,0,0,0" />
+                                    </StackPanel>
+                                </Button>
+                                <Button Style="{StaticResource Button.Ghost}" Command="{Binding ExportCommand}" Margin="0,0,8,8">
+                                    <StackPanel Orientation="Horizontal">
+                                        <Path Style="{StaticResource Icon}" Data="{StaticResource I.Export}" Width="14" Height="14" />
+                                        <TextBlock Text="Exportar" Margin="8,0,0,0" />
+                                    </StackPanel>
+                                </Button>
+                                <Button Style="{StaticResource Button.Ghost}" Command="{Binding ToggleMathCommand}" Margin="0,0,8,8">
+                                    <StackPanel Orientation="Horizontal">
+                                        <Path Style="{StaticResource Icon}" Data="{StaticResource I.Eye}" Width="14" Height="14" />
+                                        <TextBlock Text="Ver detalhes do cálculo" Margin="8,0,0,0" />
+                                    </StackPanel>
+                                </Button>
+                                <Button Style="{StaticResource Button.Ghost}" Command="{Binding ToggleIssuesCommand}" Margin="0,0,8,8" Visibility="{Binding HasIssues, Converter={StaticResource Vis}}">
+                                    <StackPanel Orientation="Horizontal">
+                                        <Path Style="{StaticResource Icon}" Data="{StaticResource I.Warning}" Width="14" Height="14" Stroke="{DynamicResource B.Warning}" />
+                                        <TextBlock Text="Ver problemas" Margin="8,0,0,0" />
+                                    </StackPanel>
+                                </Button>
+                                <Button Style="{StaticResource Button.Ghost}" Command="{Binding BackToPreparationCommand}" Margin="0,0,8,8"
+                                        ToolTip="Voltar à preparação (ex.: mudar a opção de armazenamento)">
+                                    <StackPanel Orientation="Horizontal">
+                                        <Path Style="{StaticResource Icon}" Data="{StaticResource I.ChevronLeft}" Width="14" Height="14" />
+                                        <TextBlock Text="Opções" Margin="8,0,0,0" />
+                                    </StackPanel>
+                                </Button>
+                            </WrapPanel>
+                        </StackPanel>
+                    </fx:DashboardPanel>
+                </Border>
+
+                <!-- Comparação -->
+                <Border Style="{StaticResource Card}" Margin="0,0,0,14" Visibility="{Binding HasComparison, Converter={StaticResource Vis}}">
+                    <StackPanel>
+                        <TextBlock Text="{Binding ComparisonTitle}" Style="{StaticResource Text.Subtitle}" TextWrapping="Wrap" Margin="0,0,0,10" />
+                        <ItemsControl ItemsSource="{Binding Comparison}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="{x:Type vm:SetupCompareRow}">
+                                    <Grid Margin="0,3">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="160" />
+                                            <ColumnDefinition Width="90" />
+                                            <ColumnDefinition Width="30" />
+                                            <ColumnDefinition Width="90" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="{Binding Category}" Style="{StaticResource Text.Muted}" />
+                                        <TextBlock Grid.Column="1" Text="{Binding Previous}" HorizontalAlignment="Right" />
+                                        <TextBlock Grid.Column="2" Text="→" Style="{StaticResource Text.Muted}" HorizontalAlignment="Center" />
+                                        <TextBlock Grid.Column="3" Text="{Binding Current}" FontWeight="SemiBold" />
+                                        <TextBlock x:Name="Delta" Grid.Column="4" Text="{Binding Delta}" Foreground="{DynamicResource B.TextMuted}" />
+                                    </Grid>
+                                    <DataTemplate.Triggers>
+                                        <DataTrigger Binding="{Binding Sign}" Value="1"><Setter TargetName="Delta" Property="Foreground" Value="{DynamicResource B.Success}" /></DataTrigger>
+                                        <DataTrigger Binding="{Binding Sign}" Value="-1"><Setter TargetName="Delta" Property="Foreground" Value="{DynamicResource B.Warning}" /></DataTrigger>
+                                    </DataTemplate.Triggers>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+
+                <!-- Componentes -->
+                <TextBlock Text="COMPONENTES" Style="{StaticResource Text.Section}" />
+                <ItemsControl ItemsSource="{Binding Cards}" Focusable="False" Margin="0,0,0,14">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate><fx:DashboardPanel MinColumnWidth="270" Spacing="14" /></ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="{x:Type vm:CategoryCard}">
+                            <Border Style="{StaticResource Card}">
+                                <StackPanel>
+                                    <DockPanel Margin="0,0,0,10">
+                                        <Border Width="38" Height="38" CornerRadius="10" Background="{DynamicResource B.PrimarySoft}" Margin="0,0,12,0" VerticalAlignment="Top">
+                                            <Path Style="{StaticResource Icon}" Data="{Binding Icon, Converter={x:Static fx:ResourceKeyConverter.Instance}}" Stroke="{DynamicResource B.Primary}"
+                                                  HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                        </Border>
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding Title}" Style="{StaticResource Text.Caption}" />
+                                            <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                                        </StackPanel>
+                                    </DockPanel>
+                                    <DockPanel Margin="0,0,0,6">
+                                        <TextBlock DockPanel.Dock="Right" Text="/ 1000" Style="{StaticResource Text.Caption}" VerticalAlignment="Bottom" Margin="6,0,0,6"
+                                                   Visibility="{Binding Scored, Converter={StaticResource Vis}}" />
+                                        <TextBlock x:Name="ScoreLabel" Text="{Binding ScoreText}" Style="{StaticResource Text.Metric}" FontSize="34" />
+                                    </DockPanel>
+                                    <TextBlock x:Name="StatusLabel" Text="{Binding StatusText}" FontWeight="SemiBold" Foreground="{DynamicResource B.Warning}" Margin="0,0,0,6"
+                                               Visibility="{Binding Scored, Converter={StaticResource NotVis}}" />
+                                    <fx:ArcGauge Value="{Binding GaugeValue}" Maximum="1000" Mode="Bar" Thickness="6" Height="8" Stroke="{DynamicResource B.HeroGradient}" Track="{DynamicResource B.SurfaceHigh}"
+                                                 Margin="0,0,0,10" />
+                                    <WrapPanel>
+                                        <Border Style="{StaticResource Tag}"><TextBlock Text="{Binding WeightText}" FontSize="11" /></Border>
+                                        <Border Style="{StaticResource Tag}"><TextBlock Text="{Binding BasisTag}" FontSize="11" /></Border>
+                                    </WrapPanel>
+                                    <Grid Margin="0,4,0,0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition /><RowDefinition /><RowDefinition />
+                                        </Grid.RowDefinitions>
+                                        <TextBlock Text="Correspondência" Style="{StaticResource RowLabel}" />
+                                        <TextBlock Grid.Column="1" Text="{Binding MatchText}" Style="{StaticResource RowValue}" />
+                                        <TextBlock Grid.Row="1" Text="Fonte" Style="{StaticResource RowLabel}" />
+                                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding SourceText}" Style="{StaticResource RowValue}" />
+                                        <TextBlock Grid.Row="2" Text="Confiabilidade" Style="{StaticResource RowLabel}" />
+                                        <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding ConfidenceText}" Style="{StaticResource RowValue}" />
+                                    </Grid>
+                                    <TextBlock Text="{Binding Reason}" Style="{StaticResource Text.Body}" FontSize="12" Foreground="{DynamicResource B.Warning}" Margin="0,8,0,0"
+                                               Visibility="{Binding Reason, Converter={StaticResource NullVis}}" />
+
+                                    <ItemsControl ItemsSource="{Binding Drives}" Margin="0,10,0,0" Visibility="{Binding HasDrives, Converter={StaticResource Vis}}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate DataType="{x:Type vm:DriveRow}">
+                                                <Border Style="{StaticResource Card.Inset}" Padding="10,6" Margin="0,0,0,6" ToolTip="{Binding Status}">
+                                                    <DockPanel>
+                                                        <TextBlock DockPanel.Dock="Right" Text="{Binding Capacity}" FontWeight="SemiBold" Margin="8,0,0,0" />
+                                                        <StackPanel>
+                                                            <TextBlock Text="{Binding Model}" FontSize="12" TextTrimming="CharacterEllipsis" />
+                                                            <TextBlock x:Name="DriveState" Style="{StaticResource Text.Caption}">
+                                                                <Run Text="{Binding Type, Mode=OneWay}" /><Run Text=" · " /><Run Text="{Binding Status, Mode=OneWay}" />
+                                                            </TextBlock>
+                                                        </StackPanel>
+                                                    </DockPanel>
+                                                </Border>
+                                                <DataTemplate.Triggers>
+                                                    <DataTrigger Binding="{Binding Included}" Value="False">
+                                                        <Setter TargetName="DriveState" Property="Foreground" Value="{DynamicResource B.Warning}" />
+                                                    </DataTrigger>
+                                                </DataTemplate.Triggers>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+
+                                    <StackPanel Margin="0,10,0,0" Visibility="{Binding HasChoices, Converter={StaticResource Vis}}">
+                                        <TextBlock Text="Escolha manual (somente se for exatamente o seu modelo):" Style="{StaticResource Text.Caption}" Margin="0,0,0,6" TextWrapping="Wrap" />
+                                        <ItemsControl ItemsSource="{Binding Choices}" ItemTemplate="{StaticResource ChoiceTemplate}" />
+                                    </StackPanel>
+                                    <Button Style="{StaticResource Button.Ghost}" HorizontalAlignment="Left" Margin="0,8,0,0" Visibility="{Binding CanClearOverride, Converter={StaticResource Vis}}"
+                                            Command="{Binding DataContext.ClearOverrideCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}">
+                                        <StackPanel Orientation="Horizontal">
+                                            <Path Style="{StaticResource Icon}" Data="{StaticResource I.Close}" Width="12" Height="12" />
+                                            <TextBlock Text="Desfazer escolha manual" Margin="8,0,0,0" />
+                                        </StackPanel>
+                                    </Button>
+
+                                    <Expander Style="{StaticResource Expander.Plain}" Header="Detalhes" Margin="0,10,0,0">
+                                        <StackPanel>
+                                            <ItemsControl ItemsSource="{Binding Facts}" ItemTemplate="{StaticResource FactTemplate}" />
+                                            <TextBlock Text="{Binding BasisText}" Style="{StaticResource Text.Caption}" Margin="0,8,0,0" Visibility="{Binding BasisText, Converter={StaticResource NullVis}}" />
+                                        </StackPanel>
+                                    </Expander>
+                                </StackPanel>
+                            </Border>
+                            <DataTemplate.Triggers>
+                                <DataTrigger Binding="{Binding Scored}" Value="False">
+                                    <Setter TargetName="ScoreLabel" Property="Foreground" Value="{DynamicResource B.TextMuted}" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding Excluded}" Value="True">
+                                    <Setter TargetName="StatusLabel" Property="Foreground" Value="{DynamicResource B.TextMuted}" />
+                                </DataTrigger>
+                            </DataTemplate.Triggers>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <!-- Problemas -->
+                <Border Style="{StaticResource Card}" Margin="0,0,0,14" Visibility="{Binding HasIssues, Converter={StaticResource Vis}}">
+                    <StackPanel>
+                        <DockPanel>
+                            <Button DockPanel.Dock="Right" Style="{StaticResource Button.Ghost}" Command="{Binding ToggleIssuesCommand}">
+                                <TextBlock>
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Text" Value="Mostrar" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding ShowIssues}" Value="True"><Setter Property="Text" Value="Ocultar" /></DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                            </Button>
+                            <Path Style="{StaticResource Icon}" Data="{StaticResource I.Warning}" Stroke="{DynamicResource B.Warning}" Margin="0,0,10,0" />
+                            <StackPanel>
+                                <TextBlock Text="Problemas na identificação do hardware" Style="{StaticResource Text.Subtitle}" />
+                                <TextBlock Text="{Binding IssuesTitle}" Style="{StaticResource Text.Caption}" />
+                            </StackPanel>
+                        </DockPanel>
+                        <ItemsControl ItemsSource="{Binding Issues}" Margin="0,12,0,0" Visibility="{Binding ShowIssues, Converter={StaticResource Vis}}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="{x:Type vm:IssueItem}">
+                                    <Border x:Name="IssueCard" Style="{StaticResource Card.Inset}" Margin="0,0,0,10" BorderBrush="{DynamicResource B.Border}">
+                                        <StackPanel>
+                                            <WrapPanel Margin="0,0,0,6">
+                                                <Border Style="{StaticResource Tag}"><TextBlock Text="{Binding Category}" FontSize="11" FontWeight="SemiBold" /></Border>
+                                                <Border Style="{StaticResource Tag}"><TextBlock Text="{Binding State}" FontSize="11" /></Border>
+                                            </WrapPanel>
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto" MinWidth="110" />
+                                                    <ColumnDefinition Width="*" />
+                                                </Grid.ColumnDefinitions>
+                                                <Grid.RowDefinitions>
+                                                    <RowDefinition /><RowDefinition /><RowDefinition /><RowDefinition /><RowDefinition />
+                                                </Grid.RowDefinitions>
+                                                <TextBlock Text="Nome detectado" Style="{StaticResource RowLabel}" />
+                                                <TextBlock Grid.Column="1" Text="{Binding DetectedName}" Style="{StaticResource RowValue}" />
+                                                <TextBlock Grid.Row="1" Text="Fonte consultada" Style="{StaticResource RowLabel}" />
+                                                <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding Source}" Style="{StaticResource RowValue}" />
+                                                <TextBlock Grid.Row="2" Text="Motivo" Style="{StaticResource RowLabel}" />
+                                                <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding Reason}" Style="{StaticResource RowValue}" />
+                                                <TextBlock Grid.Row="3" Text="Consequência" Style="{StaticResource RowLabel}" />
+                                                <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding Consequence}" Style="{StaticResource RowValue}" />
+                                                <TextBlock Grid.Row="4" Text="Ação sugerida" Style="{StaticResource RowLabel}" Visibility="{Binding Action, Converter={StaticResource NullVis}}" />
+                                                <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding Action}" Style="{StaticResource RowValue}" Visibility="{Binding Action, Converter={StaticResource NullVis}}" />
+                                            </Grid>
+                                            <ItemsControl ItemsSource="{Binding Choices}" ItemTemplate="{StaticResource ChoiceTemplate}" Margin="0,8,0,0"
+                                                          Visibility="{Binding HasChoices, Converter={StaticResource Vis}}">
+                                                <ItemsControl.ItemsPanel>
+                                                    <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+                                                </ItemsControl.ItemsPanel>
+                                            </ItemsControl>
+                                            <Expander Style="{StaticResource Expander.Plain}" Header="Detalhes técnicos" Margin="0,6,0,0">
+                                                <TextBlock Text="{Binding Details}" Style="{StaticResource Text.Mono}" Foreground="{DynamicResource B.TextMuted}" />
+                                            </Expander>
+                                            <StackPanel Orientation="Horizontal" Margin="0,4,0,0" Visibility="{Binding CanRetry, Converter={StaticResource Vis}}">
+                                                <Button Style="{StaticResource Button.Ghost}" Command="{Binding DataContext.RedoCommand, RelativeSource={RelativeSource AncestorType=UserControl}}">
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <Path Style="{StaticResource Icon}" Data="{StaticResource I.Refresh}" Width="13" Height="13" />
+                                                        <TextBlock Text="Tentar novamente" Margin="8,0,0,0" />
+                                                    </StackPanel>
+                                                </Button>
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </Border>
+                                    <DataTemplate.Triggers>
+                                        <DataTrigger Binding="{Binding Severity}" Value="Error"><Setter TargetName="IssueCard" Property="BorderBrush" Value="{DynamicResource B.Error}" /></DataTrigger>
+                                        <DataTrigger Binding="{Binding Severity}" Value="Warning"><Setter TargetName="IssueCard" Property="BorderBrush" Value="{DynamicResource B.Warning}" /></DataTrigger>
+                                    </DataTemplate.Triggers>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+
+                <!-- Como chegamos a essa nota -->
+                <Border Style="{StaticResource Card}" Margin="0,0,0,14">
+                    <StackPanel>
+                        <DockPanel>
+                            <Button DockPanel.Dock="Right" Style="{StaticResource Button.Ghost}" Command="{Binding ToggleMathCommand}">
+                                <TextBlock>
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Text" Value="Ver o cálculo" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding ShowMath}" Value="True"><Setter Property="Text" Value="Ocultar" /></DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                            </Button>
+                            <Path Style="{StaticResource Icon}" Data="{StaticResource I.Reports}" Stroke="{DynamicResource B.Primary}" Margin="0,0,10,0" />
+                            <StackPanel>
+                                <TextBlock Text="Como chegamos a essa nota" Style="{StaticResource Text.Subtitle}" />
+                                <TextBlock Style="{StaticResource Text.Caption}" Text="Média ponderada das categorias avaliadas: GPU 45%, CPU 35%, RAM 12% e armazenamento 8%." />
+                            </StackPanel>
+                        </DockPanel>
+                        <StackPanel Margin="0,14,0,0" Visibility="{Binding ShowMath, Converter={StaticResource Vis}}">
+                            <Border Style="{StaticResource Card.Inset}" Margin="0,0,0,12">
+                                <TextBlock Text="{Binding FormulaText}" Style="{StaticResource Text.Mono}" />
+                            </Border>
+                            <Grid Margin="0,0,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="150" /><ColumnDefinition Width="120" /><ColumnDefinition Width="110" /><ColumnDefinition Width="110" /><ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="Categoria" Style="{StaticResource Text.Caption}" />
+                                <TextBlock Grid.Column="1" Text="Nota" Style="{StaticResource Text.Caption}" />
+                                <TextBlock Grid.Column="2" Text="Peso original" Style="{StaticResource Text.Caption}" />
+                                <TextBlock Grid.Column="3" Text="Peso efetivo" Style="{StaticResource Text.Caption}" />
+                                <TextBlock Grid.Column="4" Text="Contribuição" Style="{StaticResource Text.Caption}" />
+                            </Grid>
+                            <ItemsControl ItemsSource="{Binding MathRows}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate DataType="{x:Type vm:MathRow}">
+                                        <Grid x:Name="Row" Margin="0,3">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="150" /><ColumnDefinition Width="120" /><ColumnDefinition Width="110" /><ColumnDefinition Width="110" /><ColumnDefinition Width="*" />
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Text="{Binding Category}" FontWeight="SemiBold" />
+                                            <TextBlock Grid.Column="1" Text="{Binding Score}" />
+                                            <TextBlock Grid.Column="2" Text="{Binding BaseWeight}" />
+                                            <TextBlock Grid.Column="3" Text="{Binding EffectiveWeight}" />
+                                            <TextBlock Grid.Column="4" Text="{Binding Contribution}" />
+                                        </Grid>
+                                        <DataTemplate.Triggers>
+                                            <DataTrigger Binding="{Binding Participated}" Value="False"><Setter TargetName="Row" Property="Opacity" Value="0.55" /></DataTrigger>
+                                        </DataTemplate.Triggers>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <Rectangle Style="{StaticResource Divider}" />
+                            <ItemsControl ItemsSource="{Binding Notes}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <DockPanel Margin="0,0,0,6">
+                                            <TextBlock Text="•" Foreground="{DynamicResource B.Primary}" Margin="0,0,8,0" />
+                                            <TextBlock Text="{Binding}" Style="{StaticResource Text.Muted}" FontSize="12" />
+                                        </DockPanel>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <TextBlock Text="FONTES DESTA AVALIAÇÃO" Style="{StaticResource Text.Section}" Margin="0,10,0,6" />
+                            <ItemsControl ItemsSource="{Binding Datasets}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate DataType="{x:Type vm:DatasetRow}">
+                                        <StackPanel Margin="0,0,0,6">
+                                            <TextBlock Text="{Binding Title}" FontWeight="SemiBold" FontSize="12" />
+                                            <TextBlock Text="{Binding Detail}" Style="{StaticResource Text.Caption}" />
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+
+            <!-- ====================== Histórico ====================== -->
+            <StackPanel Visibility="{Binding IsRunningState, Converter={StaticResource NotVis}}">
+                <StackPanel Visibility="{Binding HasHistory, Converter={StaticResource Vis}}">
+                    <TextBlock Text="HISTÓRICO DE AVALIAÇÕES" Style="{StaticResource Text.Section}" Margin="0,6,0,10" />
+                    <ItemsControl ItemsSource="{Binding History}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="{x:Type vm:HistoryItem}">
+                                <Border Style="{StaticResource Card.Inset}" Margin="0,0,0,8">
+                                    <DockPanel>
+                                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                                            <Button Style="{StaticResource Button.Ghost}" Margin="0,0,6,0"
+                                                    Command="{Binding DataContext.OpenHistoryCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <Path Style="{StaticResource Icon}" Data="{StaticResource I.Eye}" Width="13" Height="13" />
+                                                    <TextBlock Text="Abrir" Margin="8,0,0,0" />
+                                                </StackPanel>
+                                            </Button>
+                                            <Button Style="{StaticResource Button.Icon}" ToolTip="Excluir do histórico" AutomationProperties.Name="Excluir do histórico"
+                                                    Command="{Binding DataContext.DeleteHistoryCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}">
+                                                <Path Style="{StaticResource Icon}" Data="{StaticResource I.Trash}" Width="14" Height="14" />
+                                            </Button>
+                                        </StackPanel>
+                                        <TextBlock Text="{Binding Score}" Style="{StaticResource Text.Metric}" Width="80" VerticalAlignment="Center" />
+                                        <StackPanel VerticalAlignment="Center">
+                                            <TextBlock FontWeight="SemiBold"><Run Text="{Binding Tier, Mode=OneWay}" /><Run Text=" · " /><Run Text="{Binding Completeness, Mode=OneWay}" /></TextBlock>
+                                            <TextBlock Style="{StaticResource Text.Caption}"><Run Text="{Binding Date, Mode=OneWay}" /><Run Text=" · " /><Run Text="{Binding Details, Mode=OneWay}" /></TextBlock>
+                                        </StackPanel>
+                                    </DockPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </StackPanel>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

@@ -1,0 +1,110 @@
+<UserControl x:Class="Framex.App.Views.AboutView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:Framex.App.ViewModels"
+             mc:Ignorable="d" d:DataContext="{d:DesignInstance vm:AboutViewModel}" d:DesignWidth="1100" d:DesignHeight="900">
+    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="24,8,24,24">
+        <StackPanel MaxWidth="960" HorizontalAlignment="Left">
+            <!-- Identidade -->
+            <Border Style="{StaticResource Card}" Padding="32,28" Margin="0,0,0,16">
+                <Grid>
+                    <Ellipse Width="320" Height="320" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,-120,-120,-120" Opacity="0.18" IsHitTestVisible="False">
+                        <Ellipse.Fill>
+                            <RadialGradientBrush>
+                                <GradientStop Color="{DynamicResource C.Primary}" Offset="0" />
+                                <GradientStop Color="Transparent" Offset="1" />
+                            </RadialGradientBrush>
+                        </Ellipse.Fill>
+                    </Ellipse>
+                    <DockPanel>
+                        <Image Source="/Assets/framex-256.png" Width="96" Height="96" Margin="0,0,24,0" RenderOptions.BitmapScalingMode="HighQuality" />
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="{Binding Product}" FontFamily="{DynamicResource F.Display}" FontSize="44" FontWeight="Bold" Foreground="{DynamicResource B.HeroGradient}">
+                                <TextBlock.Effect>
+                                    <DropShadowEffect Color="{DynamicResource C.Primary}" BlurRadius="28" ShadowDepth="0" Opacity="{DynamicResource O.Glow}" />
+                                </TextBlock.Effect>
+                            </TextBlock>
+                            <TextBlock Text="Monitoramento de desempenho para jogos no Windows" Style="{StaticResource Text.Subtitle}" Foreground="{DynamicResource B.TextMuted}" />
+                            <TextBlock Text="{Binding Version}" Style="{StaticResource Text.Caption}" Margin="0,8,0,0" />
+                            <TextBlock Text="{Binding Credit}" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource B.Primary}" Margin="0,14,0,0" />
+                        </StackPanel>
+                    </DockPanel>
+                </Grid>
+            </Border>
+
+            <!-- Ambiente -->
+            <Border Style="{StaticResource Card}" Margin="0,0,0,16">
+                <StackPanel>
+                    <TextBlock Text="Ambiente" Style="{StaticResource Text.Subtitle}" Margin="0,0,0,10" />
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="160" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <TextBlock Text="Plataforma" Style="{StaticResource Text.Muted}" Margin="0,3" />
+                        <TextBlock Grid.Column="1" Text="{Binding Runtime}" TextWrapping="Wrap" Margin="0,3" />
+                        <TextBlock Grid.Row="1" Text="Privilégios" Style="{StaticResource Text.Muted}" Margin="0,3" />
+                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding Elevation}" TextWrapping="Wrap" Margin="0,3" />
+                        <TextBlock Grid.Row="2" Text="Dados locais" Style="{StaticResource Text.Muted}" Margin="0,3" />
+                        <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding DataFolder}" TextWrapping="Wrap" Margin="0,3" />
+                        <TextBlock Grid.Row="3" Text="Logs" Style="{StaticResource Text.Muted}" Margin="0,3" />
+                        <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding LogsFolder}" TextWrapping="Wrap" Margin="0,3" />
+                    </Grid>
+                    <WrapPanel Margin="0,12,0,0">
+                        <Button Content="Abrir pasta de dados" Style="{StaticResource Button.Ghost}" Command="{Binding OpenDataFolderCommand}" Margin="0,0,8,0" />
+                        <Button Content="Abrir pasta de logs" Style="{StaticResource Button.Ghost}" Command="{Binding OpenLogsFolderCommand}" />
+                    </WrapPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- Princípios -->
+            <Border Style="{StaticResource Card}" Margin="0,0,0,16">
+                <StackPanel>
+                    <TextBlock Text="Como o FRAMEX trabalha" Style="{StaticResource Text.Subtitle}" Margin="0,0,0,10" />
+                    <TextBlock TextWrapping="Wrap" Style="{StaticResource Text.Muted}" LineHeight="20">
+                        • Somente dados reais: sensores indisponíveis aparecem como “—”, nunca como zero ou valor estimado.<LineBreak />
+                        • FPS e frametime vêm de eventos de apresentação do Windows (ETW) via PresentMon — sem injeção de código nos jogos e sem interação com sistemas anti-cheat.<LineBreak />
+                        • O overlay é uma janela separada; jogos em tela cheia exclusiva podem cobri-lo.<LineBreak />
+                        • Local e privado: sem conta, sem telemetria, sem envio automático de dados.<LineBreak />
+                        • Compatibilidade com sensores depende do hardware, driver e privilégios; nem todo componente expõe todas as métricas.
+                    </TextBlock>
+                </StackPanel>
+            </Border>
+
+            <!-- Licenças -->
+            <Border Style="{StaticResource Card}" Margin="0,0,0,16">
+                <StackPanel>
+                    <TextBlock Text="Componentes de terceiros" Style="{StaticResource Text.Subtitle}" Margin="0,0,0,10" />
+                    <ItemsControl ItemsSource="{Binding Licenses}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="{x:Type vm:LicenseEntry}">
+                                <Grid Margin="0,4">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="280" />
+                                        <ColumnDefinition Width="150" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="{Binding Component}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                                    <TextBlock Grid.Column="1" Text="{Binding License}" Foreground="{DynamicResource B.Primary}" />
+                                    <TextBlock Grid.Column="2" Text="{Binding Use}" Style="{StaticResource Text.Muted}" TextWrapping="Wrap" />
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <Expander Header="Avisos completos (THIRD-PARTY-NOTICES)" Margin="0,14,0,0" Foreground="{DynamicResource B.Text}">
+                        <TextBox Text="{Binding NoticesText, Mode=OneWay}" IsReadOnly="True" TextWrapping="Wrap" MaxHeight="360" Height="Auto" VerticalScrollBarVisibility="Auto"
+                                 FontFamily="{DynamicResource F.Mono}" FontSize="12" Padding="10" Margin="0,10,0,0" VerticalContentAlignment="Top" />
+                    </Expander>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

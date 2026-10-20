@@ -1,0 +1,121 @@
+<Window x:Class="Framex.App.Views.OverlayWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:fx="clr-namespace:Framex.App.Controls"
+        xmlns:vm="clr-namespace:Framex.App.ViewModels"
+        Title="FRAMEX Overlay"
+        WindowStyle="None" AllowsTransparency="True" Background="Transparent"
+        Topmost="True" ShowInTaskbar="False" ShowActivated="False" Focusable="False"
+        ResizeMode="NoResize" SizeToContent="WidthAndHeight"
+        UseLayoutRounding="True" TextOptions.TextFormattingMode="Display"
+        d:DataContext="{d:DesignInstance vm:OverlayViewModel}"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d">
+    <Window.Resources>
+        <fx:BoolToVisibilityConverter x:Key="Vis" />
+        <fx:NullToVisibilityConverter x:Key="NullVis" />
+        <fx:BoolToOrientationConverter x:Key="Orient" />
+        <fx:MultiplyConverter x:Key="Mul" />
+
+        <DataTemplate x:Key="OverlayItem" DataType="{x:Type vm:OverlayItemViewModel}">
+            <Grid Margin="6,3" MinWidth="64">
+                <!-- Texto -->
+                <StackPanel Orientation="Horizontal" Visibility="{Binding IsText, Converter={StaticResource Vis}}" VerticalAlignment="Center">
+                    <TextBlock x:Name="Title" Text="{Binding Title}" Foreground="{Binding DataContext.MutedBrush, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                               FontSize="{Binding DataContext.Layout.FontSize, RelativeSource={RelativeSource AncestorType=ItemsControl}}" Margin="0,0,8,0" VerticalAlignment="Center"
+                               Visibility="{Binding DataContext.Layout.ShowTitles, RelativeSource={RelativeSource AncestorType=ItemsControl}, Converter={StaticResource Vis}}" />
+                    <TextBlock x:Name="Value" Text="{Binding Text}" FontWeight="SemiBold" FontFamily="Bahnschrift, Segoe UI"
+                               Foreground="{Binding DataContext.TextBrush, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                               FontSize="{Binding DataContext.Layout.FontSize, RelativeSource={RelativeSource AncestorType=ItemsControl}}" VerticalAlignment="Center" />
+                </StackPanel>
+                <!-- Barra -->
+                <StackPanel Visibility="{Binding IsBar, Converter={StaticResource Vis}}" MinWidth="110">
+                    <DockPanel>
+                        <TextBlock Text="{Binding Text}" DockPanel.Dock="Right" FontWeight="SemiBold" FontFamily="Bahnschrift, Segoe UI"
+                                   Foreground="{Binding DataContext.TextBrush, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                   FontSize="{Binding DataContext.Layout.FontSize, RelativeSource={RelativeSource AncestorType=ItemsControl}}" />
+                        <TextBlock Text="{Binding Title}" Margin="0,0,8,0" Foreground="{Binding DataContext.MutedBrush, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                   FontSize="{Binding DataContext.Layout.FontSize, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                   Visibility="{Binding DataContext.Layout.ShowTitles, RelativeSource={RelativeSource AncestorType=ItemsControl}, Converter={StaticResource Vis}}" />
+                    </DockPanel>
+                    <fx:ArcGauge Mode="Bar" Margin="0,3,0,0" Value="{Binding Fraction}" Maximum="1"
+                                 Height="{Binding DataContext.Layout.IndicatorThickness, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                 Thickness="{Binding DataContext.Layout.IndicatorThickness, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                 Stroke="{Binding DataContext.AccentBrush, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                 Track="{Binding DataContext.BorderBrush, RelativeSource={RelativeSource AncestorType=ItemsControl}}" Animate="False" />
+                </StackPanel>
+                <!-- Anel -->
+                <StackPanel Visibility="{Binding IsRing, Converter={StaticResource Vis}}" HorizontalAlignment="Center">
+                    <Grid Width="{Binding DataContext.Layout.FontSize, RelativeSource={RelativeSource AncestorType=ItemsControl}, Converter={StaticResource Mul}, ConverterParameter=4.2}"
+                          Height="{Binding DataContext.Layout.FontSize, RelativeSource={RelativeSource AncestorType=ItemsControl}, Converter={StaticResource Mul}, ConverterParameter=4.2}">
+                        <fx:ArcGauge Value="{Binding Fraction}" Maximum="1" Animate="False"
+                                     Thickness="{Binding DataContext.Layout.IndicatorThickness, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                     Stroke="{Binding DataContext.AccentBrush, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                     Track="{Binding DataContext.BorderBrush, RelativeSource={RelativeSource AncestorType=ItemsControl}}" />
+                        <TextBlock Text="{Binding Text}" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold" FontFamily="Bahnschrift, Segoe UI"
+                                   Foreground="{Binding DataContext.TextBrush, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                   FontSize="{Binding DataContext.Layout.FontSize, RelativeSource={RelativeSource AncestorType=ItemsControl}}" />
+                    </Grid>
+                    <TextBlock Text="{Binding Title}" HorizontalAlignment="Center" Margin="0,2,0,0"
+                               Foreground="{Binding DataContext.MutedBrush, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                               FontSize="{Binding DataContext.Layout.FontSize, RelativeSource={RelativeSource AncestorType=ItemsControl}, Converter={StaticResource Mul}, ConverterParameter=0.85}"
+                               Visibility="{Binding DataContext.Layout.ShowTitles, RelativeSource={RelativeSource AncestorType=ItemsControl}, Converter={StaticResource Vis}}" />
+                </StackPanel>
+                <!-- Gráfico -->
+                <StackPanel Visibility="{Binding IsGraph, Converter={StaticResource Vis}}" Width="190">
+                    <DockPanel>
+                        <TextBlock Text="{Binding Text}" DockPanel.Dock="Right" Foreground="{Binding DataContext.TextBrush, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                   FontSize="{Binding DataContext.Layout.FontSize, RelativeSource={RelativeSource AncestorType=ItemsControl}, Converter={StaticResource Mul}, ConverterParameter=0.85}" />
+                        <TextBlock Text="{Binding Title}" Foreground="{Binding DataContext.MutedBrush, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                   FontSize="{Binding DataContext.Layout.FontSize, RelativeSource={RelativeSource AncestorType=ItemsControl}, Converter={StaticResource Mul}, ConverterParameter=0.85}"
+                                   Visibility="{Binding DataContext.Layout.ShowTitles, RelativeSource={RelativeSource AncestorType=ItemsControl}, Converter={StaticResource Vis}}" />
+                    </DockPanel>
+                    <fx:LiveChart Height="42" Margin="0,3,0,0" Series1="{Binding Series}" Revision="{Binding Revision}" Capacity="180" ShowAxis="False" StrokeThickness="1.4"
+                                  Brush1="{Binding DataContext.AccentBrush, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                  GridBrush="{Binding DataContext.BorderBrush, RelativeSource={RelativeSource AncestorType=ItemsControl}}" />
+                </StackPanel>
+            </Grid>
+            <DataTemplate.Triggers>
+                <DataTrigger Binding="{Binding Metric}" Value="Fps">
+                    <Setter TargetName="Value" Property="FontSize" Value="{Binding DataContext.Layout.FontSize, RelativeSource={RelativeSource AncestorType=ItemsControl}, Converter={StaticResource Mul}, ConverterParameter=1.6}" />
+                    <Setter TargetName="Value" Property="Foreground" Value="{Binding DataContext.AccentBrush, RelativeSource={RelativeSource AncestorType=ItemsControl}}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding HasValue}" Value="False">
+                    <Setter TargetName="Value" Property="Opacity" Value="0.55" />
+                </DataTrigger>
+            </DataTemplate.Triggers>
+        </DataTemplate>
+    </Window.Resources>
+
+    <Grid x:Name="Root">
+        <Grid.LayoutTransform>
+            <ScaleTransform ScaleX="{Binding Layout.Scale}" ScaleY="{Binding Layout.Scale}" />
+        </Grid.LayoutTransform>
+        <Border x:Name="Panel" Background="{Binding BackgroundBrush}" BorderBrush="{Binding BorderBrush}" BorderThickness="{Binding Layout.BorderThickness}"
+                CornerRadius="{Binding Layout.CornerRadius}" Padding="8,6">
+            <StackPanel>
+                <ItemsControl ItemsSource="{Binding Items}" ItemTemplate="{StaticResource OverlayItem}" Focusable="False">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <StackPanel Orientation="{Binding DataContext.Horizontal, RelativeSource={RelativeSource AncestorType=ItemsControl}, Converter={StaticResource Orient}}" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                </ItemsControl>
+                <Border Visibility="{Binding AlertText, Converter={StaticResource NullVis}}" Margin="6,6,6,2" Padding="8,4" CornerRadius="6" Background="#33FFB020" BorderBrush="#FFB020" BorderThickness="1">
+                    <TextBlock Text="{Binding AlertText}" Foreground="#FFD27A" FontSize="12" TextWrapping="Wrap" MaxWidth="260" />
+                </Border>
+                <Border Visibility="{Binding EditMode, Converter={StaticResource Vis}}" Margin="6,6,6,2" Padding="8,4" CornerRadius="6" Background="#2200E5FF">
+                    <TextBlock Foreground="#E7EEFC" FontSize="11" TextWrapping="Wrap" MaxWidth="260"
+                               Text="Modo de edição: arraste para posicionar. Use o atalho de edição ou o botão em Personalização para concluir." />
+                </Border>
+            </StackPanel>
+        </Border>
+        <Border x:Name="EditFrame" BorderBrush="#00E5FF" BorderThickness="1.5" CornerRadius="{Binding Layout.CornerRadius}"
+                Visibility="{Binding EditMode, Converter={StaticResource Vis}}" IsHitTestVisible="False">
+            <Border.Effect>
+                <DropShadowEffect Color="#00E5FF" BlurRadius="14" ShadowDepth="0" Opacity="0.8" />
+            </Border.Effect>
+        </Border>
+    </Grid>
+</Window>

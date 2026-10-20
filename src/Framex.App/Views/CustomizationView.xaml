@@ -1,0 +1,455 @@
+<UserControl x:Class="Framex.App.Views.CustomizationView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:Framex.App.ViewModels"
+             xmlns:fx="clr-namespace:Framex.App.Controls"
+             xmlns:cz="clr-namespace:Framex.Core.Customization;assembly=Framex.Core"
+             mc:Ignorable="d" d:DataContext="{d:DesignInstance vm:CustomizationViewModel}" d:DesignWidth="1100" d:DesignHeight="900">
+    <UserControl.Resources>
+        <fx:EnumEqualsConverter x:Key="EnumEq" />
+        <fx:BoolToVisibilityConverter x:Key="Vis" />
+        <fx:BoolToVisibilityConverter x:Key="NotVis" Invert="True" />
+        <fx:NullToVisibilityConverter x:Key="NullVis" />
+        <fx:NullToVisibilityConverter x:Key="NotNullVis" Invert="True" />
+        <fx:InvertBoolConverter x:Key="Not" />
+        <fx:HexToBrushConverter x:Key="HexBrush" />
+        <fx:PercentConverter x:Key="Pct" />
+
+        <DataTemplate x:Key="EnumLabel">
+            <TextBlock Text="{Binding Converter={x:Static fx:EnumLabelConverter.Instance}}" />
+        </DataTemplate>
+
+        <Style x:Key="FieldLabel" TargetType="TextBlock" BasedOn="{StaticResource Text.Muted}">
+            <Setter Property="Margin" Value="0,12,0,6" />
+        </Style>
+        <Style x:Key="ValueText" TargetType="TextBlock">
+            <Setter Property="DockPanel.Dock" Value="Right" />
+            <Setter Property="FontFamily" Value="{DynamicResource F.Mono}" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Foreground" Value="{DynamicResource B.Primary}" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+    </UserControl.Resources>
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="24,8,24,24">
+        <StackPanel>
+            <TextBlock Text="Personalização" Style="{StaticResource Text.Hero}" />
+            <TextBlock Text="Temas, overlay, painel e preferências de interface. As alterações são salvas automaticamente." Style="{StaticResource Text.Muted}" Margin="0,4,0,16" />
+
+            <Border Style="{StaticResource Card.Inset}" Padding="4" HorizontalAlignment="Left" Margin="0,0,0,18">
+                <StackPanel Orientation="Horizontal">
+                    <RadioButton Style="{StaticResource Segment}" GroupName="CustomTabs" Content="Temas" IsChecked="{Binding Tab, Converter={StaticResource EnumEq}, ConverterParameter=Themes}" />
+                    <RadioButton Style="{StaticResource Segment}" GroupName="CustomTabs" Content="Overlay" IsChecked="{Binding Tab, Converter={StaticResource EnumEq}, ConverterParameter=Overlay}" />
+                    <RadioButton Style="{StaticResource Segment}" GroupName="CustomTabs" Content="Painel" IsChecked="{Binding Tab, Converter={StaticResource EnumEq}, ConverterParameter=Dashboard}" />
+                    <RadioButton Style="{StaticResource Segment}" GroupName="CustomTabs" Content="Interface" IsChecked="{Binding Tab, Converter={StaticResource EnumEq}, ConverterParameter=Interface}" />
+                </StackPanel>
+            </Border>
+
+            <!-- ============================== TEMAS ============================== -->
+            <StackPanel Visibility="{Binding Tab, Converter={x:Static fx:EnumToVisibilityConverter.Instance}, ConverterParameter=Themes}">
+                <DockPanel Margin="0,0,0,12">
+                    <Button DockPanel.Dock="Right" Style="{StaticResource Button.Ghost}" Command="{Binding ImportThemeCommand}">
+                        <StackPanel Orientation="Horizontal">
+                            <Path Style="{StaticResource Icon}" Data="{StaticResource I.Import}" Width="15" Height="15" />
+                            <TextBlock Text="Importar tema" Margin="8,0,0,0" />
+                        </StackPanel>
+                    </Button>
+                    <TextBlock Text="Temas" Style="{StaticResource Text.Section}" VerticalAlignment="Center" />
+                </DockPanel>
+                <ItemsControl ItemsSource="{Binding Themes}" Focusable="False">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate><fx:DashboardPanel MinColumnWidth="240" Spacing="14" /></ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="{x:Type vm:ThemeCard}">
+                            <Border x:Name="Frame" Style="{StaticResource Card}" Padding="0">
+                                <StackPanel>
+                                    <!-- Miniatura do tema -->
+                                    <Border Height="96" CornerRadius="12,12,0,0" Background="{Binding Theme.Background, Converter={StaticResource HexBrush}}" ClipToBounds="True">
+                                        <Grid Margin="14">
+                                            <Border Background="{Binding Theme.Surface, Converter={StaticResource HexBrush}}" CornerRadius="8"
+                                                    BorderBrush="{Binding Theme.Border, Converter={StaticResource HexBrush}}" BorderThickness="1" Padding="10">
+                                                <StackPanel>
+                                                    <TextBlock Text="144 FPS" FontFamily="{DynamicResource F.Display}" FontSize="18" FontWeight="Bold"
+                                                               Foreground="{Binding Theme.Primary, Converter={StaticResource HexBrush}}" />
+                                                    <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                                                        <Border Width="34" Height="6" CornerRadius="3" Background="{Binding Theme.Primary, Converter={StaticResource HexBrush}}" Margin="0,0,5,0" />
+                                                        <Border Width="24" Height="6" CornerRadius="3" Background="{Binding Theme.Secondary, Converter={StaticResource HexBrush}}" Margin="0,0,5,0" />
+                                                        <Border Width="18" Height="6" CornerRadius="3" Background="{Binding Theme.Accent, Converter={StaticResource HexBrush}}" Margin="0,0,5,0" />
+                                                        <Border Width="12" Height="6" CornerRadius="3" Background="{Binding Theme.Accent2, Converter={StaticResource HexBrush}}" />
+                                                    </StackPanel>
+                                                </StackPanel>
+                                            </Border>
+                                        </Grid>
+                                    </Border>
+                                    <StackPanel Margin="14,10,14,12">
+                                        <DockPanel>
+                                            <Border DockPanel.Dock="Right" Style="{StaticResource Chip}" Padding="8,2" Visibility="{Binding IsActive, Converter={StaticResource Vis}}">
+                                                <TextBlock Text="Ativo" FontSize="11" Foreground="{DynamicResource B.Primary}" />
+                                            </Border>
+                                            <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                                        </DockPanel>
+                                        <TextBlock Style="{StaticResource Text.Caption}" Margin="0,2,0,10">
+                                            <TextBlock.Text>
+                                                <Binding Path="BuiltIn">
+                                                    <Binding.Converter><fx:BoolToTextConverter TrueText="Tema embutido" FalseText="Tema personalizado (editável)" /></Binding.Converter>
+                                                </Binding>
+                                            </TextBlock.Text>
+                                        </TextBlock>
+                                        <WrapPanel>
+                                            <Button Content="Aplicar" Style="{StaticResource Button.Primary}" Padding="12,5" Margin="0,0,6,6"
+                                                    Command="{Binding DataContext.ApplyThemeCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}"
+                                                    IsEnabled="{Binding IsActive, Converter={StaticResource Not}}" />
+                                            <Button Content="Duplicar" Style="{StaticResource Button.Ghost}" Padding="10,5" Margin="0,0,6,6" ToolTip="Cria uma cópia editável"
+                                                    Command="{Binding DataContext.DuplicateThemeCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}" />
+                                            <Button Style="{StaticResource Button.Icon}" Margin="0,0,6,6" ToolTip="Exportar (.framex.json)"
+                                                    Command="{Binding DataContext.ExportThemeCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}">
+                                                <Path Style="{StaticResource Icon}" Data="{StaticResource I.Export}" Width="15" Height="15" />
+                                            </Button>
+                                            <Button Style="{StaticResource Button.Icon}" Margin="0,0,6,6" ToolTip="Excluir tema personalizado"
+                                                    Command="{Binding DataContext.DeleteThemeCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}"
+                                                    Visibility="{Binding BuiltIn, Converter={StaticResource NotVis}}">
+                                                <Path Style="{StaticResource Icon}" Data="{StaticResource I.Trash}" Width="15" Height="15" />
+                                            </Button>
+                                        </WrapPanel>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
+                            <DataTemplate.Triggers>
+                                <DataTrigger Binding="{Binding IsActive}" Value="True">
+                                    <Setter TargetName="Frame" Property="BorderBrush" Value="{DynamicResource B.Primary}" />
+                                </DataTrigger>
+                            </DataTemplate.Triggers>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <!-- Editor -->
+                <Border Style="{StaticResource Card}" Margin="0,18,0,0" Visibility="{Binding Editor, Converter={StaticResource NotNullVis}}">
+                    <DockPanel>
+                        <Path Style="{StaticResource Icon}" Data="{StaticResource I.Info}" Stroke="{DynamicResource B.Primary}" Margin="0,0,12,0" VerticalAlignment="Top" />
+                        <TextBlock TextWrapping="Wrap" Text="Temas embutidos não podem ser alterados. Use “Duplicar” para criar uma cópia personalizada e editá-la aqui com pré-visualização ao vivo." />
+                    </DockPanel>
+                </Border>
+                <Border Style="{StaticResource Card}" Margin="0,18,0,0" Visibility="{Binding Editor, Converter={StaticResource NullVis}}" DataContext="{Binding Editor}">
+                    <StackPanel>
+                        <TextBlock Text="Editor de tema" Style="{StaticResource Text.Title}" />
+                        <TextBlock Text="As alterações são aplicadas imediatamente. Cores inválidas são ignoradas até serem corrigidas." Style="{StaticResource Text.Muted}" Margin="0,2,0,8" />
+                        <TextBlock Text="Nome" Style="{StaticResource FieldLabel}" />
+                        <TextBox Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" MaxLength="60" MaxWidth="360" HorizontalAlignment="Left" Width="360" />
+
+                        <TextBlock Text="Cores" Style="{StaticResource Text.Section}" Margin="0,18,0,8" />
+                        <ItemsControl ItemsSource="{Binding Colors}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate><fx:DashboardPanel MinColumnWidth="250" Spacing="10" /></ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="{x:Type vm:ColorToken}">
+                                    <DockPanel>
+                                        <fx:ColorPicker DockPanel.Dock="Right" Hex="{Binding Hex, Mode=TwoWay}" />
+                                        <TextBlock Text="{Binding Label}" VerticalAlignment="Center" />
+                                    </DockPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <TextBlock Text="Paleta dos gráficos" Style="{StaticResource Text.Section}" Margin="0,18,0,8" />
+                        <ItemsControl ItemsSource="{Binding Palette}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate><fx:DashboardPanel MinColumnWidth="250" Spacing="10" /></ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="{x:Type vm:ColorToken}">
+                                    <DockPanel>
+                                        <fx:ColorPicker DockPanel.Dock="Right" Hex="{Binding Hex, Mode=TwoWay}" />
+                                        <TextBlock Text="{Binding Label}" VerticalAlignment="Center" />
+                                    </DockPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <TextBlock Text="Forma e efeitos" Style="{StaticResource Text.Section}" Margin="0,18,0,0" />
+                        <UniformGrid Columns="2">
+                            <StackPanel Margin="0,0,24,0">
+                                <DockPanel><TextBlock Style="{StaticResource ValueText}" Text="{Binding CornerRadius, StringFormat='{}{0:0} px'}" /><TextBlock Text="Arredondamento" Style="{StaticResource FieldLabel}" /></DockPanel>
+                                <Slider Minimum="0" Maximum="24" Value="{Binding CornerRadius}" TickFrequency="1" IsSnapToTickEnabled="True" />
+                                <DockPanel><TextBlock Style="{StaticResource ValueText}" Text="{Binding SurfaceOpacity, Converter={StaticResource Pct}}" /><TextBlock Text="Opacidade das superfícies" Style="{StaticResource FieldLabel}" /></DockPanel>
+                                <Slider Minimum="0.6" Maximum="1" Value="{Binding SurfaceOpacity}" TickFrequency="0.05" IsSnapToTickEnabled="True" />
+                                <DockPanel><TextBlock Style="{StaticResource ValueText}" Text="{Binding GlowIntensity, Converter={StaticResource Pct}}" /><TextBlock Text="Intensidade do brilho" Style="{StaticResource FieldLabel}" /></DockPanel>
+                                <Slider Minimum="0" Maximum="1" Value="{Binding GlowIntensity}" TickFrequency="0.05" IsSnapToTickEnabled="True" />
+                                <DockPanel><TextBlock Style="{StaticResource ValueText}" Text="{Binding BorderThickness, StringFormat='{}{0:0.#} px'}" /><TextBlock Text="Espessura das bordas" Style="{StaticResource FieldLabel}" /></DockPanel>
+                                <Slider Minimum="0" Maximum="3" Value="{Binding BorderThickness}" TickFrequency="0.5" IsSnapToTickEnabled="True" />
+                            </StackPanel>
+                            <StackPanel>
+                                <DockPanel><TextBlock Style="{StaticResource ValueText}" Text="{Binding FontScale, Converter={StaticResource Pct}}" /><TextBlock Text="Tamanho da fonte" Style="{StaticResource FieldLabel}" /></DockPanel>
+                                <Slider Minimum="0.8" Maximum="1.4" Value="{Binding FontScale}" TickFrequency="0.05" IsSnapToTickEnabled="True" />
+                                <DockPanel><TextBlock Style="{StaticResource ValueText}" Text="{Binding Spacing, Converter={StaticResource Pct}}" /><TextBlock Text="Espaçamento" Style="{StaticResource FieldLabel}" /></DockPanel>
+                                <Slider Minimum="0.7" Maximum="1.5" Value="{Binding Spacing}" TickFrequency="0.05" IsSnapToTickEnabled="True" />
+                                <TextBlock Text="Estilo dos medidores" Style="{StaticResource FieldLabel}" />
+                                <ComboBox ItemsSource="{Binding DataContext.GaugeStyles, RelativeSource={RelativeSource AncestorType=UserControl}}" SelectedItem="{Binding Gauges}" ItemTemplate="{StaticResource EnumLabel}" />
+                                <TextBlock Text="Animações do tema" Style="{StaticResource FieldLabel}" />
+                                <ComboBox ItemsSource="{Binding DataContext.AnimationLevels, RelativeSource={RelativeSource AncestorType=UserControl}}" SelectedItem="{Binding Animations}" ItemTemplate="{StaticResource EnumLabel}" />
+                            </StackPanel>
+                        </UniformGrid>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+
+            <!-- ============================== OVERLAY ============================== -->
+            <Grid Visibility="{Binding Tab, Converter={x:Static fx:EnumToVisibilityConverter.Instance}, ConverterParameter=Overlay}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="280" />
+                    <ColumnDefinition Width="16" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <!-- Lista de layouts -->
+                <StackPanel>
+                    <Border Style="{StaticResource Card}">
+                        <StackPanel>
+                            <TextBlock Text="Layouts" Style="{StaticResource Text.Subtitle}" Margin="0,0,0,10" />
+                            <ListBox ItemsSource="{Binding Layouts}" SelectedItem="{Binding SelectedLayout}" MaxHeight="340" DisplayMemberPath="Name" />
+                            <WrapPanel Margin="0,12,0,0">
+                                <Button Style="{StaticResource Button.Ghost}" Command="{Binding NewLayoutCommand}" Margin="0,0,6,6" Padding="10,5" Content="Novo" />
+                                <Button Style="{StaticResource Button.Ghost}" Command="{Binding DuplicateLayoutCommand}" Margin="0,0,6,6" Padding="10,5" Content="Duplicar" />
+                                <Button Style="{StaticResource Button.Ghost}" Command="{Binding DeleteLayoutCommand}" Margin="0,0,6,6" Padding="10,5" Content="Excluir"
+                                        IsEnabled="{Binding IsPresetLayout, Converter={StaticResource Not}}" ToolTip="Layouts pré-definidos não podem ser excluídos (use Restaurar)" ToolTipService.ShowOnDisabled="True" />
+                                <Button Style="{StaticResource Button.Ghost}" Command="{Binding ResetPresetCommand}" Margin="0,0,6,6" Padding="10,5" Content="Restaurar"
+                                        IsEnabled="{Binding IsPresetLayout}" ToolTip="Volta o layout pré-definido ao padrão" ToolTipService.ShowOnDisabled="True" />
+                            </WrapPanel>
+                            <WrapPanel>
+                                <Button Style="{StaticResource Button.Ghost}" Command="{Binding ImportLayoutCommand}" Margin="0,0,6,6" Padding="10,5" Content="Importar…" />
+                                <Button Style="{StaticResource Button.Ghost}" Command="{Binding ExportLayoutCommand}" Margin="0,0,6,6" Padding="10,5" Content="Exportar…" />
+                            </WrapPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Style="{StaticResource Card}" Margin="0,14,0,0">
+                        <StackPanel>
+                            <TextBlock Text="Posição e visualização" Style="{StaticResource Text.Subtitle}" Margin="0,0,0,10" />
+                            <Button Command="{Binding SetActiveLayoutCommand}" Margin="0,0,0,8" HorizontalAlignment="Stretch">
+                                <Button.Style>
+                                    <Style TargetType="Button" BasedOn="{StaticResource Button.Primary}">
+                                        <Setter Property="Content" Value="Usar este layout" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsActiveLayout}" Value="True">
+                                                <Setter Property="Content" Value="Layout em uso" />
+                                                <Setter Property="IsEnabled" Value="False" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Button.Style>
+                            </Button>
+                            <Button Command="{Binding TogglePreviewCommand}" Margin="0,0,0,8" HorizontalAlignment="Stretch" ToolTip="Mostra o overlay agora, mesmo sem jogo em execução">
+                                <Button.Style>
+                                    <Style TargetType="Button" BasedOn="{StaticResource Button.Ghost}">
+                                        <Setter Property="Content" Value="Pré-visualizar overlay" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding OverlayPreview}" Value="True"><Setter Property="Content" Value="Encerrar pré-visualização" /></DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Button.Style>
+                            </Button>
+                            <Button Command="{Binding ToggleEditPositionCommand}" Margin="0,0,0,12" HorizontalAlignment="Stretch" ToolTip="Torna o overlay arrastável; o modo normal não captura cliques">
+                                <Button.Style>
+                                    <Style TargetType="Button" BasedOn="{StaticResource Button.Ghost}">
+                                        <Setter Property="Content" Value="Arrastar para posicionar" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding OverlayEditMode}" Value="True"><Setter Property="Content" Value="Concluir posicionamento" /></DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Button.Style>
+                            </Button>
+                            <TextBlock Text="Cantos rápidos" Style="{StaticResource Text.Caption}" Margin="0,0,0,6" />
+                            <UniformGrid Columns="3">
+                                <Button Content="↖" Style="{StaticResource Button.Ghost}" Margin="0,0,4,4" Command="{Binding PlaceOverlayCommand}" CommandParameter="TopLeft" ToolTip="Superior esquerdo" />
+                                <Button Content="↑" Style="{StaticResource Button.Ghost}" Margin="0,0,4,4" Command="{Binding PlaceOverlayCommand}" CommandParameter="Top" ToolTip="Superior central" />
+                                <Button Content="↗" Style="{StaticResource Button.Ghost}" Margin="0,0,4,4" Command="{Binding PlaceOverlayCommand}" CommandParameter="TopRight" ToolTip="Superior direito" />
+                                <Button Content="↙" Style="{StaticResource Button.Ghost}" Margin="0,0,4,4" Command="{Binding PlaceOverlayCommand}" CommandParameter="BottomLeft" ToolTip="Inferior esquerdo" />
+                                <Border />
+                                <Button Content="↘" Style="{StaticResource Button.Ghost}" Margin="0,0,4,4" Command="{Binding PlaceOverlayCommand}" CommandParameter="BottomRight" ToolTip="Inferior direito" />
+                            </UniformGrid>
+                            <TextBlock Text="Monitor" Style="{StaticResource FieldLabel}" />
+                            <ComboBox ItemsSource="{Binding Monitors}" SelectedItem="{Binding LayoutMonitor}" DisplayMemberPath="Name" />
+                            <TextBlock Text="O overlay é uma janela separada, sempre no topo e transparente a cliques. Não há injeção no processo do jogo; jogos em tela cheia exclusiva podem cobri-lo — use modo janela sem bordas."
+                                       Style="{StaticResource Text.Caption}" TextWrapping="Wrap" Margin="0,12,0,0" />
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+
+                <!-- Editor do layout -->
+                <StackPanel Grid.Column="2">
+                    <Border Style="{StaticResource Card}">
+                        <StackPanel>
+                            <TextBlock Text="Aparência" Style="{StaticResource Text.Subtitle}" />
+                            <UniformGrid Columns="2">
+                                <StackPanel Margin="0,0,24,0">
+                                    <TextBlock Text="Nome" Style="{StaticResource FieldLabel}" />
+                                    <TextBox Text="{Binding LayoutName, UpdateSourceTrigger=PropertyChanged, Delay=400}" MaxLength="60" />
+                                    <TextBlock Text="Estilo" Style="{StaticResource FieldLabel}" />
+                                    <ComboBox ItemsSource="{Binding OverlayStyles}" SelectedItem="{Binding LayoutStyle}" ItemTemplate="{StaticResource EnumLabel}"
+                                              ToolTip="Trocar o estilo aplica o conjunto de métricas correspondente" />
+                                    <DockPanel Margin="0,14,0,0">
+                                        <CheckBox DockPanel.Dock="Right" Style="{StaticResource Toggle}" IsChecked="{Binding LayoutHorizontal}" />
+                                        <TextBlock Text="Disposição horizontal" VerticalAlignment="Center" />
+                                    </DockPanel>
+                                    <DockPanel Margin="0,10,0,0">
+                                        <CheckBox DockPanel.Dock="Right" Style="{StaticResource Toggle}" IsChecked="{Binding LayoutShowTitles}" />
+                                        <TextBlock Text="Mostrar nomes das métricas" VerticalAlignment="Center" />
+                                    </DockPanel>
+                                    <DockPanel><TextBlock Style="{StaticResource ValueText}" Text="{Binding LayoutRefreshMs, StringFormat='{}{0} ms'}" /><TextBlock Text="Atualização" Style="{StaticResource FieldLabel}" /></DockPanel>
+                                    <Slider Minimum="100" Maximum="2000" Value="{Binding LayoutRefreshMs}" TickFrequency="50" IsSnapToTickEnabled="True"
+                                            ToolTip="O perfil de desempenho pode impor um intervalo mínimo maior" />
+                                </StackPanel>
+                                <StackPanel>
+                                    <DockPanel><TextBlock Style="{StaticResource ValueText}" Text="{Binding LayoutScale, Converter={StaticResource Pct}}" /><TextBlock Text="Escala" Style="{StaticResource FieldLabel}" /></DockPanel>
+                                    <Slider Minimum="0.5" Maximum="3" Value="{Binding LayoutScale}" TickFrequency="0.05" IsSnapToTickEnabled="True" />
+                                    <DockPanel><TextBlock Style="{StaticResource ValueText}" Text="{Binding LayoutFontSize, StringFormat='{}{0:0} pt'}" /><TextBlock Text="Tamanho do texto" Style="{StaticResource FieldLabel}" /></DockPanel>
+                                    <Slider Minimum="8" Maximum="40" Value="{Binding LayoutFontSize}" TickFrequency="1" IsSnapToTickEnabled="True" />
+                                    <DockPanel><TextBlock Style="{StaticResource ValueText}" Text="{Binding LayoutOpacity, Converter={StaticResource Pct}}" /><TextBlock Text="Opacidade do fundo" Style="{StaticResource FieldLabel}" /></DockPanel>
+                                    <Slider Minimum="0" Maximum="1" Value="{Binding LayoutOpacity}" TickFrequency="0.05" IsSnapToTickEnabled="True" />
+                                    <DockPanel><TextBlock Style="{StaticResource ValueText}" Text="{Binding LayoutCornerRadius, StringFormat='{}{0:0} px'}" /><TextBlock Text="Arredondamento" Style="{StaticResource FieldLabel}" /></DockPanel>
+                                    <Slider Minimum="0" Maximum="30" Value="{Binding LayoutCornerRadius}" TickFrequency="1" IsSnapToTickEnabled="True" />
+                                    <DockPanel><TextBlock Style="{StaticResource ValueText}" Text="{Binding LayoutBorder, StringFormat='{}{0:0.#} px'}" /><TextBlock Text="Borda" Style="{StaticResource FieldLabel}" /></DockPanel>
+                                    <Slider Minimum="0" Maximum="4" Value="{Binding LayoutBorder}" TickFrequency="0.5" IsSnapToTickEnabled="True" />
+                                    <DockPanel><TextBlock Style="{StaticResource ValueText}" Text="{Binding LayoutIndicator, StringFormat='{}{0:0} px'}" /><TextBlock Text="Espessura de barras e anéis" Style="{StaticResource FieldLabel}" /></DockPanel>
+                                    <Slider Minimum="1" Maximum="12" Value="{Binding LayoutIndicator}" TickFrequency="1" IsSnapToTickEnabled="True" />
+                                </StackPanel>
+                            </UniformGrid>
+
+                            <DockPanel Margin="0,18,0,0">
+                                <CheckBox DockPanel.Dock="Right" Style="{StaticResource Toggle}" IsChecked="{Binding LayoutCustomColors}" />
+                                <StackPanel>
+                                    <TextBlock Text="Cores próprias" VerticalAlignment="Center" />
+                                    <TextBlock Text="Desativado: o overlay segue as cores do tema ativo." Style="{StaticResource Text.Caption}" />
+                                </StackPanel>
+                            </DockPanel>
+                            <UniformGrid Columns="2" Margin="0,10,0,0" IsEnabled="{Binding LayoutCustomColors}">
+                                <DockPanel Margin="0,0,24,8"><fx:ColorPicker DockPanel.Dock="Right" Hex="{Binding LayoutBackground, Mode=TwoWay}" /><TextBlock Text="Fundo" VerticalAlignment="Center" /></DockPanel>
+                                <DockPanel Margin="0,0,0,8"><fx:ColorPicker DockPanel.Dock="Right" Hex="{Binding LayoutText, Mode=TwoWay}" /><TextBlock Text="Texto" VerticalAlignment="Center" /></DockPanel>
+                                <DockPanel Margin="0,0,24,0"><fx:ColorPicker DockPanel.Dock="Right" Hex="{Binding LayoutAccent, Mode=TwoWay}" /><TextBlock Text="Destaque" VerticalAlignment="Center" /></DockPanel>
+                                <DockPanel><fx:ColorPicker DockPanel.Dock="Right" Hex="{Binding LayoutBorderColor, Mode=TwoWay}" /><TextBlock Text="Borda" VerticalAlignment="Center" /></DockPanel>
+                            </UniformGrid>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Style="{StaticResource Card}" Margin="0,14,0,0">
+                        <StackPanel>
+                            <TextBlock Text="Métricas exibidas" Style="{StaticResource Text.Subtitle}" />
+                            <TextBlock Text="A ordem da lista é a ordem no overlay. Métricas sem sensor disponível aparecem como “—”." Style="{StaticResource Text.Caption}" Margin="0,2,0,10" />
+                            <ItemsControl ItemsSource="{Binding OverlayItems}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate DataType="{x:Type vm:OverlayItemRow}">
+                                        <Border Style="{StaticResource Card.Inset}" Margin="0,0,0,6" Padding="10,6">
+                                            <DockPanel>
+                                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                                                    <ComboBox Width="120" Margin="0,0,8,0" ItemsSource="{Binding DataContext.DisplayModes, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                              SelectedItem="{Binding Display}" ItemTemplate="{StaticResource EnumLabel}" IsEnabled="{Binding CanChooseDisplay}" />
+                                                    <CheckBox Style="{StaticResource Toggle}" IsChecked="{Binding Visible}" VerticalAlignment="Center" Margin="0,0,8,0" ToolTip="Visível" />
+                                                    <Button Style="{StaticResource Button.Icon}" ToolTip="Mover para cima"
+                                                            Command="{Binding DataContext.MoveItemCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}">
+                                                        <Path Style="{StaticResource Icon}" Data="{StaticResource I.ArrowUp}" Width="14" Height="14" />
+                                                    </Button>
+                                                    <Button Style="{StaticResource Button.Icon}" ToolTip="Mover para baixo"
+                                                            Command="{Binding DataContext.MoveItemDownCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}">
+                                                        <Path Style="{StaticResource Icon}" Data="{StaticResource I.ArrowDown}" Width="14" Height="14" />
+                                                    </Button>
+                                                    <Button Style="{StaticResource Button.Icon}" ToolTip="Remover"
+                                                            Command="{Binding DataContext.RemoveItemCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}">
+                                                        <Path Style="{StaticResource Icon}" Data="{StaticResource I.Close}" Width="14" Height="14" />
+                                                    </Button>
+                                                </StackPanel>
+                                                <TextBlock Text="{Binding Name}" VerticalAlignment="Center" />
+                                            </DockPanel>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <DockPanel Margin="0,8,0,0">
+                                <Button DockPanel.Dock="Right" Style="{StaticResource Button.Ghost}" Command="{Binding AddItemCommand}" Margin="8,0,0,0">
+                                    <StackPanel Orientation="Horizontal">
+                                        <Path Style="{StaticResource Icon}" Data="{StaticResource I.Plus}" Width="14" Height="14" />
+                                        <TextBlock Text="Adicionar" Margin="6,0,0,0" />
+                                    </StackPanel>
+                                </Button>
+                                <ComboBox ItemsSource="{Binding AvailableMetrics}" SelectedItem="{Binding MetricToAdd}" ItemTemplate="{StaticResource EnumLabel}" />
+                            </DockPanel>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </Grid>
+
+            <!-- ============================== PAINEL ============================== -->
+            <Border Style="{StaticResource Card}" Visibility="{Binding Tab, Converter={x:Static fx:EnumToVisibilityConverter.Instance}, ConverterParameter=Dashboard}">
+                <StackPanel>
+                    <DockPanel Margin="0,0,0,6">
+                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                            <Button Content="Importar…" Style="{StaticResource Button.Ghost}" Command="{Binding ImportDashboardCommand}" Margin="0,0,6,0" />
+                            <Button Content="Exportar…" Style="{StaticResource Button.Ghost}" Command="{Binding ExportDashboardCommand}" Margin="0,0,6,0" />
+                            <Button Content="Restaurar padrão" Style="{StaticResource Button.Ghost}" Command="{Binding ResetDashboardCommand}" />
+                        </StackPanel>
+                        <TextBlock Text="Widgets do painel" Style="{StaticResource Text.Subtitle}" VerticalAlignment="Center" />
+                    </DockPanel>
+                    <TextBlock Text="Escolha quais widgets aparecem, a ordem e se ocupam a largura total. O painel se reorganiza conforme o tamanho da janela." Style="{StaticResource Text.Caption}" Margin="0,0,0,12" />
+                    <ItemsControl ItemsSource="{Binding Widgets}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="{x:Type vm:WidgetRow}">
+                                <Border Style="{StaticResource Card.Inset}" Margin="0,0,0,6" Padding="12,6">
+                                    <DockPanel>
+                                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                                            <CheckBox Style="{StaticResource Toggle}" IsChecked="{Binding Wide}" VerticalAlignment="Center" />
+                                            <TextBlock Text="Largo" Style="{StaticResource Text.Muted}" VerticalAlignment="Center" Margin="8,0,18,0" />
+                                            <CheckBox Style="{StaticResource Toggle}" IsChecked="{Binding Visible}" VerticalAlignment="Center" />
+                                            <TextBlock Text="Visível" Style="{StaticResource Text.Muted}" VerticalAlignment="Center" Margin="8,0,18,0" />
+                                            <Button Style="{StaticResource Button.Icon}" ToolTip="Mover para cima"
+                                                    Command="{Binding DataContext.MoveWidgetCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}">
+                                                <Path Style="{StaticResource Icon}" Data="{StaticResource I.ArrowUp}" Width="14" Height="14" />
+                                            </Button>
+                                            <Button Style="{StaticResource Button.Icon}" ToolTip="Mover para baixo"
+                                                    Command="{Binding DataContext.MoveWidgetDownCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}">
+                                                <Path Style="{StaticResource Icon}" Data="{StaticResource I.ArrowDown}" Width="14" Height="14" />
+                                            </Button>
+                                        </StackPanel>
+                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                            <Path Style="{StaticResource Icon}" Data="{StaticResource I.Drag}" Width="14" Height="14" Stroke="{DynamicResource B.TextMuted}" Margin="0,0,10,0" />
+                                            <TextBlock Text="{Binding Name}" />
+                                        </StackPanel>
+                                    </DockPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+
+            <!-- ============================== INTERFACE ============================== -->
+            <Border Style="{StaticResource Card}" MaxWidth="760" HorizontalAlignment="Left" Visibility="{Binding Tab, Converter={x:Static fx:EnumToVisibilityConverter.Instance}, ConverterParameter=Interface}">
+                <StackPanel>
+                    <TextBlock Text="Interface" Style="{StaticResource Text.Subtitle}" />
+                    <DockPanel><TextBlock Style="{StaticResource ValueText}" Text="{Binding UiScale, Converter={StaticResource Pct}}" /><TextBlock Text="Escala da interface" Style="{StaticResource FieldLabel}" /></DockPanel>
+                    <Slider Minimum="0.8" Maximum="1.5" Value="{Binding UiScale}" TickFrequency="0.05" IsSnapToTickEnabled="True" />
+                    <TextBlock Text="Animações" Style="{StaticResource FieldLabel}" />
+                    <ComboBox ItemsSource="{Binding AnimationLevels}" SelectedItem="{Binding Animations}" ItemTemplate="{StaticResource EnumLabel}" />
+                    <TextBlock Text="Densidade" Style="{StaticResource FieldLabel}" />
+                    <ComboBox SelectedItem="{Binding Density}" ItemTemplate="{StaticResource EnumLabel}">
+                        <x:Static Member="cz:PanelDensity.Comfortable" />
+                        <x:Static Member="cz:PanelDensity.Compact" />
+                    </ComboBox>
+                    <TextBlock Text="Unidade de temperatura" Style="{StaticResource FieldLabel}" />
+                    <ComboBox SelectedItem="{Binding TemperatureUnit}" ItemTemplate="{StaticResource EnumLabel}" xmlns:mon="clr-namespace:Framex.Core.Monitoring;assembly=Framex.Core">
+                        <x:Static Member="mon:TemperatureUnit.Celsius" />
+                        <x:Static Member="mon:TemperatureUnit.Fahrenheit" />
+                    </ComboBox>
+                    <TextBlock Text="Unidade de memória" Style="{StaticResource FieldLabel}" />
+                    <ComboBox SelectedItem="{Binding MemoryUnits}" ItemTemplate="{StaticResource EnumLabel}" xmlns:mon="clr-namespace:Framex.Core.Monitoring;assembly=Framex.Core">
+                        <x:Static Member="mon:MemoryUnitConvention.Binary" />
+                        <x:Static Member="mon:MemoryUnitConvention.Decimal" />
+                    </ComboBox>
+                    <TextBlock Text="A animação do tema é limitada pela preferência acima: se as animações estiverem desativadas aqui, nenhum tema as ativa." Style="{StaticResource Text.Caption}" TextWrapping="Wrap" Margin="0,14,0,0" />
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

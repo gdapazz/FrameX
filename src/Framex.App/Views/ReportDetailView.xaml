@@ -1,0 +1,305 @@
+<UserControl x:Class="Framex.App.Views.ReportDetailView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:Framex.App.ViewModels"
+             xmlns:fx="clr-namespace:Framex.App.Controls"
+             xmlns:domain="clr-namespace:Framex.Core.Domain;assembly=Framex.Core"
+             mc:Ignorable="d" d:DataContext="{d:DesignInstance vm:ReportDetailViewModel}" d:DesignWidth="1100" d:DesignHeight="900">
+    <UserControl.Resources>
+        <fx:BoolToVisibilityConverter x:Key="Vis" />
+        <fx:BoolToVisibilityConverter x:Key="NotVis" Invert="True" />
+        <fx:NullToVisibilityConverter x:Key="NullVis" />
+    </UserControl.Resources>
+
+    <Grid>
+        <!-- Carregando / erro -->
+        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="{Binding IsLoading, Converter={StaticResource Vis}}">
+            <TextBlock Text="Carregando relatório…" Style="{StaticResource Text.Subtitle}" />
+        </StackPanel>
+        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="{Binding Error, Converter={StaticResource NullVis}}">
+            <TextBlock Text="{Binding Error}" Style="{StaticResource Text.Subtitle}" Foreground="{DynamicResource B.Error}" TextWrapping="Wrap" MaxWidth="520" />
+            <Button Content="Voltar aos relatórios" Command="{Binding BackCommand}" HorizontalAlignment="Center" Margin="0,14,0,0" />
+        </StackPanel>
+
+        <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="24,8,24,24">
+            <ScrollViewer.Style>
+                <Style TargetType="ScrollViewer">
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding IsLoading}" Value="True"><Setter Property="Visibility" Value="Collapsed" /></DataTrigger>
+                        <DataTrigger Binding="{Binding Error, Converter={StaticResource NullVis}}" Value="Visible"><Setter Property="Visibility" Value="Collapsed" /></DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </ScrollViewer.Style>
+            <StackPanel>
+                <!-- Cabeçalho -->
+                <DockPanel Margin="0,0,0,18">
+                    <Button DockPanel.Dock="Left" Style="{StaticResource Button.Icon}" Command="{Binding BackCommand}" ToolTip="Voltar" VerticalAlignment="Top" Margin="0,6,12,0">
+                        <Path Style="{StaticResource Icon}" Data="{StaticResource I.ChevronLeft}" />
+                    </Button>
+                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Top" Margin="0,6,0,0">
+                        <Button Style="{StaticResource Button.Ghost}" Click="OnExportClick" Margin="0,0,8,0">
+                            <StackPanel Orientation="Horizontal">
+                                <Path Style="{StaticResource Icon}" Data="{StaticResource I.Export}" Width="15" Height="15" />
+                                <TextBlock Text="Exportar" Margin="8,0,0,0" />
+                            </StackPanel>
+                            <Button.ContextMenu>
+                                <ContextMenu>
+                                    <MenuItem Header="HTML (relatório offline com gráficos)" Command="{Binding PlacementTarget.DataContext.ExportCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="Html" />
+                                    <MenuItem Header="CSV (amostras)" Command="{Binding PlacementTarget.DataContext.ExportCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="Csv" />
+                                    <MenuItem Header="JSON (dados completos)" Command="{Binding PlacementTarget.DataContext.ExportCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="Json" />
+                                </ContextMenu>
+                            </Button.ContextMenu>
+                        </Button>
+                        <Button Style="{StaticResource Button.Danger}" Command="{Binding DeleteCommand}" ToolTip="Excluir sessão">
+                            <Path Style="{StaticResource Icon}" Data="{StaticResource I.Trash}" Width="15" Height="15" />
+                        </Button>
+                    </StackPanel>
+                    <StackPanel>
+                        <TextBlock Text="{Binding Title}" Style="{StaticResource Text.Hero}" TextTrimming="CharacterEllipsis" />
+                        <TextBlock Text="{Binding Subtitle}" Style="{StaticResource Text.Muted}" Margin="0,4,0,0" />
+                        <WrapPanel Margin="0,8,0,0">
+                            <Border Style="{StaticResource Chip}" Margin="0,0,8,0" BorderBrush="{DynamicResource B.Warning}" Visibility="{Binding Incomplete, Converter={StaticResource Vis}}"
+                                    ToolTip="O FRAMEX foi encerrado de forma inesperada durante esta sessão. Os dados salvos até a última gravação foram recuperados.">
+                                <TextBlock Text="Sessão incompleta (recuperada)" Foreground="{DynamicResource B.Warning}" FontSize="12" />
+                            </Border>
+                            <Border Style="{StaticResource Chip}" Margin="0,0,8,0" Visibility="{Binding Unconfirmed, Converter={StaticResource Vis}}">
+                                <TextBlock Text="Jogo não confirmado" Foreground="{DynamicResource B.TextMuted}" FontSize="12" />
+                            </Border>
+                            <Border Style="{StaticResource Chip}" Visibility="{Binding HasFrames, Converter={StaticResource NotVis}}"
+                                    ToolTip="Nenhum quadro foi capturado: o PresentMon não estava disponível, a captura estava desativada ou o jogo não apresentou quadros detectáveis.">
+                                <TextBlock Text="Sem dados de FPS" Foreground="{DynamicResource B.TextMuted}" FontSize="12" />
+                            </Border>
+                        </WrapPanel>
+                    </StackPanel>
+                </DockPanel>
+
+                <!-- Resumo -->
+                <ItemsControl ItemsSource="{Binding Cards}" Focusable="False">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate><fx:DashboardPanel MinColumnWidth="190" Spacing="12" /></ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="{x:Type vm:StatCard}">
+                            <Border Style="{StaticResource Card}" Padding="16,14" ToolTip="{Binding Hint}">
+                                <StackPanel>
+                                    <TextBlock Text="{Binding Label}" Style="{StaticResource Text.Caption}" />
+                                    <TextBlock Text="{Binding Value}" FontFamily="{DynamicResource F.Display}" FontSize="26" FontWeight="SemiBold" Margin="0,4,0,0">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="Foreground" Value="{DynamicResource B.Text}" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding Accent}" Value="True"><Setter Property="Foreground" Value="{DynamicResource B.HeroGradient}" /></DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                </StackPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <!-- Faixa de visualização -->
+                <Border Style="{StaticResource Card.Inset}" Margin="0,18,0,12" Padding="14,10">
+                    <DockPanel>
+                        <Button DockPanel.Dock="Right" Content="Restaurar zoom" Style="{StaticResource Button.Ghost}" Command="{Binding ResetZoomCommand}" Padding="10,5" />
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="{Binding RangeText}" FontWeight="SemiBold" />
+                            <TextBlock Text="{Binding RangeStats}" Style="{StaticResource Text.Caption}" Visibility="{Binding RangeStats, Converter={StaticResource NullVis}}" />
+                        </StackPanel>
+                    </DockPanel>
+                </Border>
+
+                <!-- Gráficos sincronizados -->
+                <ItemsControl ItemsSource="{Binding Charts}" Focusable="False">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="{x:Type vm:ChartGroup}">
+                            <Border Style="{StaticResource Card}" Margin="0,0,0,12" Padding="16,12">
+                                <DockPanel>
+                                    <DockPanel DockPanel.Dock="Top" Margin="0,0,0,6">
+                                        <ItemsControl DockPanel.Dock="Right" ItemsSource="{Binding Series}">
+                                            <ItemsControl.ItemsPanel>
+                                                <ItemsPanelTemplate><StackPanel Orientation="Horizontal" /></ItemsPanelTemplate>
+                                            </ItemsControl.ItemsPanel>
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate DataType="{x:Type fx:ChartSeries}">
+                                                    <StackPanel Orientation="Horizontal" Margin="12,0,0,0">
+                                                        <Rectangle Width="12" Height="3" RadiusX="1.5" RadiusY="1.5" Fill="{Binding Brush}" VerticalAlignment="Center" Margin="0,0,6,0" />
+                                                        <TextBlock Text="{Binding Name}" Style="{StaticResource Text.Caption}" />
+                                                    </StackPanel>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                        <TextBlock Text="{Binding Title}" Style="{StaticResource Text.Subtitle}" />
+                                    </DockPanel>
+                                    <Grid Height="170">
+                                        <fx:TimeSeriesChart Series="{Binding Series}" YMin="{Binding YMin}" YMax="{Binding YMax}" GapSeconds="{Binding GapSeconds}"
+                                                            Markers="{Binding DataContext.Markers, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                            TotalDuration="{Binding DataContext.TotalSeconds, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                            ViewStart="{Binding DataContext.ViewStart, RelativeSource={RelativeSource AncestorType=UserControl}, Mode=TwoWay}"
+                                                            ViewEnd="{Binding DataContext.ViewEnd, RelativeSource={RelativeSource AncestorType=UserControl}, Mode=TwoWay}"
+                                                            HoverX="{Binding DataContext.HoverX, RelativeSource={RelativeSource AncestorType=UserControl}, Mode=TwoWay}"
+                                                            GridBrush="{DynamicResource B.Border}" LabelBrush="{DynamicResource B.TextMuted}" TooltipBackground="{DynamicResource B.SurfaceHigh}"
+                                                            TextBrush="{DynamicResource B.Text}" AccentBrush="{DynamicResource B.Primary}"
+                                                            Visibility="{Binding HasData, Converter={StaticResource Vis}}" />
+                                        <TextBlock Text="Sem dados para este gráfico nesta sessão (sensor indisponível ou captura inativa)." Style="{StaticResource Text.Muted}"
+                                                   HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="{Binding HasData, Converter={StaticResource NotVis}}" />
+                                    </Grid>
+                                </DockPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <!-- Distribuição + condições -->
+                <Grid Margin="0,6,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="3*" />
+                        <ColumnDefinition Width="16" />
+                        <ColumnDefinition Width="2*" />
+                    </Grid.ColumnDefinitions>
+                    <Border Style="{StaticResource Card}">
+                        <DockPanel>
+                            <TextBlock DockPanel.Dock="Top" Text="Distribuição de frametime" Style="{StaticResource Text.Subtitle}" />
+                            <TextBlock DockPanel.Dock="Top" Text="Percentual de quadros em cada faixa de tempo." Style="{StaticResource Text.Caption}" Margin="0,2,0,10" />
+                            <Grid Height="190">
+                                <fx:HistogramChart Bins="{Binding Distribution}" BarBrush="{DynamicResource B.HeroGradient}" LabelBrush="{DynamicResource B.TextMuted}"
+                                                   TooltipBackground="{DynamicResource B.SurfaceHigh}" TextBrush="{DynamicResource B.Text}" />
+                                <TextBlock Text="Sem quadros capturados." Style="{StaticResource Text.Muted}" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                           Visibility="{Binding HasFrames, Converter={StaticResource NotVis}}" />
+                            </Grid>
+                        </DockPanel>
+                    </Border>
+                    <Border Grid.Column="2" Style="{StaticResource Card}">
+                        <StackPanel>
+                            <TextBlock Text="Condições da sessão" Style="{StaticResource Text.Subtitle}" Margin="0,0,0,10" />
+                            <ItemsControl ItemsSource="{Binding Conditions}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate DataType="{x:Type vm:StatCard}">
+                                        <StackPanel Margin="0,0,0,10">
+                                            <TextBlock Text="{Binding Label}" Style="{StaticResource Text.Caption}" />
+                                            <TextBlock Text="{Binding Value}" TextWrapping="Wrap" />
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
+                <!-- Métricas -->
+                <Border Style="{StaticResource Card}" Margin="0,16,0,0">
+                    <StackPanel>
+                        <TextBlock Text="Métricas de hardware" Style="{StaticResource Text.Subtitle}" />
+                        <TextBlock Text="Média ponderada pelo tempo entre amostras válidas. Cobertura = fração da sessão com leitura válida." Style="{StaticResource Text.Caption}" Margin="0,2,0,12" />
+                        <Grid Margin="0,0,0,6">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="2*" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="1.4*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="MÉTRICA" Style="{StaticResource Text.Caption}" FontWeight="SemiBold" />
+                            <TextBlock Grid.Column="1" Text="MÉDIA" Style="{StaticResource Text.Caption}" FontWeight="SemiBold" />
+                            <TextBlock Grid.Column="2" Text="MÍNIMO" Style="{StaticResource Text.Caption}" FontWeight="SemiBold" />
+                            <TextBlock Grid.Column="3" Text="MÁXIMO" Style="{StaticResource Text.Caption}" FontWeight="SemiBold" />
+                            <TextBlock Grid.Column="4" Text="COBERTURA" Style="{StaticResource Text.Caption}" FontWeight="SemiBold" />
+                        </Grid>
+                        <TextBlock Text="Nenhuma métrica de hardware registrada." Style="{StaticResource Text.Muted}"
+                                   Visibility="{Binding Metrics.Count, Converter={x:Static fx:CountToVisibilityConverter.Instance}, ConverterParameter=Invert}" />
+                        <ItemsControl ItemsSource="{Binding Metrics}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="{x:Type vm:MetricRow}">
+                                    <Grid Height="28" ToolTip="{Binding Method}">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="2*" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="1.4*" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="{Binding Label}" VerticalAlignment="Center" />
+                                        <TextBlock Grid.Column="1" Text="{Binding Average}" VerticalAlignment="Center" FontWeight="SemiBold" />
+                                        <TextBlock Grid.Column="2" Text="{Binding Minimum}" VerticalAlignment="Center" />
+                                        <TextBlock Grid.Column="3" Text="{Binding Maximum}" VerticalAlignment="Center" />
+                                        <TextBlock Grid.Column="4" Text="{Binding Coverage}" VerticalAlignment="Center" Style="{StaticResource Text.Muted}" FontSize="12" />
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+
+                <!-- Linha do tempo -->
+                <Border Style="{StaticResource Card}" Margin="0,16,0,0">
+                    <StackPanel>
+                        <TextBlock Text="Linha do tempo de eventos" Style="{StaticResource Text.Subtitle}" />
+                        <TextBlock Text="Clique em um evento para ampliar os gráficos naquele momento." Style="{StaticResource Text.Caption}" Margin="0,2,0,12" />
+                        <ItemsControl ItemsSource="{Binding Events}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="{x:Type vm:EventRow}">
+                                    <Button Style="{StaticResource Button.Ghost}" BorderThickness="0" HorizontalContentAlignment="Stretch" Padding="8,6" Margin="0,0,0,2"
+                                            Command="{Binding DataContext.FocusEventCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" CommandParameter="{Binding}">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="80" />
+                                                <ColumnDefinition Width="22" />
+                                                <ColumnDefinition Width="170" />
+                                                <ColumnDefinition Width="*" />
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Text="{Binding Time}" FontFamily="{DynamicResource F.Mono}" FontSize="12" Foreground="{DynamicResource B.TextMuted}" VerticalAlignment="Center" />
+                                            <Ellipse Grid.Column="1" Width="9" Height="9" HorizontalAlignment="Left">
+                                                <Ellipse.Style>
+                                                    <Style TargetType="Ellipse">
+                                                        <Setter Property="Fill" Value="{DynamicResource B.Accent}" />
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding Severity}" Value="{x:Static domain:EventSeverity.Warning}"><Setter Property="Fill" Value="{DynamicResource B.Warning}" /></DataTrigger>
+                                                            <DataTrigger Binding="{Binding Severity}" Value="{x:Static domain:EventSeverity.Error}"><Setter Property="Fill" Value="{DynamicResource B.Error}" /></DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Ellipse.Style>
+                                            </Ellipse>
+                                            <TextBlock Grid.Column="2" Text="{Binding Type}" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                            <TextBlock Grid.Column="3" Text="{Binding Message}" TextWrapping="Wrap" VerticalAlignment="Center" Foreground="{DynamicResource B.Text}" />
+                                        </Grid>
+                                    </Button>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+
+                <!-- Lacunas e notas -->
+                <Border Style="{StaticResource Card}" Margin="0,16,0,0">
+                    <StackPanel>
+                        <TextBlock Text="Lacunas e observações metodológicas" Style="{StaticResource Text.Subtitle}" Margin="0,0,0,10" />
+                        <TextBlock Text="Nenhuma lacuna de dados detectada." Style="{StaticResource Text.Muted}"
+                                   Visibility="{Binding Gaps.Count, Converter={x:Static fx:CountToVisibilityConverter.Instance}, ConverterParameter=Invert}" />
+                        <ItemsControl ItemsSource="{Binding Gaps}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal" Margin="0,2">
+                                        <Path Style="{StaticResource Icon}" Data="{StaticResource I.Warning}" Width="14" Height="14" Stroke="{DynamicResource B.Warning}" Margin="0,0,8,0" />
+                                        <TextBlock Text="{Binding}" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <ItemsControl ItemsSource="{Binding Notes}" Margin="0,10,0,0">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding StringFormat='• {0}'}" Style="{StaticResource Text.Muted}" TextWrapping="Wrap" Margin="0,2" />
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <TextBlock Margin="0,12,0,0" Style="{StaticResource Text.Caption}" TextWrapping="Wrap"
+                                   Text="Os gráficos mostram correlação temporal entre métricas; eles não comprovam a causa de uma queda de desempenho." />
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</UserControl>
